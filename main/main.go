@@ -11,6 +11,5 @@ func main() {
 
 	myWatch := watcher.NewWatcher(argument)
 
-	myWatch.InitSearch()
-	myWatch.InitList()
+	myWatch.Watch()
 }
