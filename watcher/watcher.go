@@ -1,4 +1,4 @@
-package watchfs
+package watcher
 
 import (
 	"fmt"
