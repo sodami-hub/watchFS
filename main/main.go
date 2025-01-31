@@ -2,13 +2,15 @@ package main
 
 import (
 	"os"
+
+	"github.com/sodami-hub/watchfs/watcher"
 )
 
 func main() {
 	argument := os.Args[1]
 
-	myWatch := watchfs.newWatcher(argument)
+	myWatch := watcher.NewWatcher(argument)
 
-	myWatch.initSearch()
-	myWatch.initList()
+	myWatch.InitSearch()
+	myWatch.InitList()
 }

@@ -3,73 +3,59 @@ package watcher
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
-type dirAndFiles struct {
-	dir   string
-	files []map[string]string
-}
-
 type fs struct {
+	initDir     string
 	directories []string
-	allFiles    []dirAndFiles
+	allFiles    []map[string]string
 	changes     []map[string]string // change 값이 변한 파일들의 슬라이스
 }
 
-func newWatcher(dir string) fs {
-	initDir := make([]string, 10)
+func NewWatcher(dir string) fs {
+	initDir := make([]string, 0, 10)
 	initDir = append(initDir, string(dir))
-	daf := make([]dirAndFiles, 10)
 	myWatcher := &fs{
+		initDir:     dir,
 		directories: initDir,
-		allFiles:    daf,
-		changes:     make([]map[string]string, 20),
+		allFiles:    make([]map[string]string, 0, 30),
+		changes:     make([]map[string]string, 0, 20),
 	}
 
 	return *myWatcher
 }
 
-func (fs *fs) initSearch() error {
-
-	for _, directory := range fs.directories {
-		innerDir, err := os.ReadDir(directory)
+func (fs *fs) InitSearch() error {
+	err := filepath.Walk(fs.initDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return fmt.Errorf("ReadDir error : %v", err)
+			return err
 		}
-		daf := &dirAndFiles{
-			dir: directory,
+		if info.IsDir() {
+			fs.directories = append(fs.directories, path)
+		} else {
+			fileMap := make(map[string]string)
+			modTime := info.ModTime().String()
+			fileMap[path] = modTime
+			fs.allFiles = append(fs.allFiles, fileMap)
 		}
-		fileMap := make(map[string]string)
-		for _, innerFile := range innerDir {
-			if innerFile.IsDir() {
-				fs.directories = append(fs.directories, innerFile.Name())
-			} else {
-				info, err := innerFile.Info()
-				if err != nil {
-					return fmt.Errorf("FileInfo error : %v", err)
-				}
-				modTime := info.ModTime()
-				fileMap[innerFile.Name()] = modTime.String()
-				daf.files = append(daf.files, fileMap)
-			}
-		}
-		fs.allFiles = append(fs.allFiles, *daf)
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error walking the path %v", err)
 	}
 	return nil
 }
 
-func (fs fs) initList() {
+func (fs fs) InitList() {
 	fmt.Println("디렉토리 리스트")
 	for _, dir := range fs.directories {
 		fmt.Println(dir)
 	}
 	fmt.Println("디렉토리 / 파일:수정시간 리스트")
 	for _, dir := range fs.allFiles {
-		fmt.Println("====", dir.dir, "====")
-		for _, file := range dir.files {
-			for k, v := range file {
-				fmt.Printf("filename : %s : modtime: %s\n", k, v)
-			}
+		for k, v := range dir {
+			fmt.Printf("filename : %s  //  modtime: %s\n", k, v)
 		}
 	}
 }
