@@ -64,7 +64,7 @@ func (fs fs) List() {
 	}
 	fmt.Println("변경 파일 목록")
 	for k, v := range fs.changes {
-		fmt.Printf("filename : %s // 변경사항 : %s\n", k, v)
+		fmt.Printf("changes : %s // 변경사항 : %s\n", k, v)
 	}
 }
 
@@ -74,6 +74,8 @@ func (fs *fs) Watch() error {
 	if err != nil {
 		return err
 	}
+
+	fs.List()
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("make fsnotify error : %v", err)
