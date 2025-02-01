@@ -8,6 +8,8 @@ import (
 	"syscall"
 
 	"github.com/fsnotify/fsnotify"
+	api "github.com/sodami-hub/watchfs/api/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 type fs struct {
@@ -30,27 +32,75 @@ func NewWatcher(dir string) fs {
 	return *myWatcher
 }
 
-func (fs *fs) dirSearch() error {
-	err := filepath.Walk(fs.initDir, func(path string, info os.FileInfo, err error) error {
+func (fs *fs) loadFS() error {
+	file, err := os.Open("./.garage/clientFS")
+	defer func() {
+		_ = file.Close()
+	}()
+	if err != nil {
+		err := filepath.Walk(fs.initDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				if path != fs.initDir && path != ".gagage" {
+					path = fs.initDir + path
+					fs.directories = append(fs.directories, path)
+				}
+			} else {
+				path = fs.initDir + path
+				modTime := info.ModTime().String()
+				fs.allFiles[path] = modTime
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("error walking the path %v", err)
+		}
+		err = os.MkdirAll("./.garage", 0755)
+		if err != nil {
+			return fmt.Errorf("error creating directory: %v", err)
+		}
+
+		file, err := os.OpenFile("./.garage/clientFS", os.O_CREATE, 0644)
+		if err != nil {
+			return fmt.Errorf("file create error : %v", err)
+		}
+		defer file.Close()
+	} else {
+		var myfs api.ClientFS
+		b, err := os.ReadFile("./.garage/clientFS")
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
-			if path != fs.initDir {
-				path = fs.initDir + path
-				fs.directories = append(fs.directories, path)
-			}
-		} else {
-			path = fs.initDir + path
-			modTime := info.ModTime().String()
-			fs.allFiles[path] = modTime
+		err = proto.Unmarshal(b, &myfs)
+		if err != nil {
+			return err
 		}
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("error walking the path %v", err)
+		fs.initDir = myfs.InitDir
+		fs.allFiles = myfs.AllFiles
+		fs.directories = myfs.Directories
+		fs.changes = myfs.Changes
 	}
 	return nil
+}
+
+func (fs *fs) saveFS() error {
+	file, err := os.OpenFile("./.garage/clientFS", os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	b, err := proto.Marshal(&api.ClientFS{
+		InitDir:     fs.initDir,
+		Directories: fs.directories,
+		AllFiles:    fs.allFiles,
+		Changes:     fs.changes,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(b)
+	return err
 }
 
 func (fs fs) List() {
@@ -70,7 +120,7 @@ func (fs fs) List() {
 
 func (fs *fs) Watch() error {
 
-	err := fs.dirSearch()
+	err := fs.loadFS()
 	if err != nil {
 		return err
 	}
@@ -169,5 +219,10 @@ func (fs *fs) Watch() error {
 		}
 	}
 	<-done
+	err = fs.saveFS()
+	if err != nil {
+		return fmt.Errorf("클라이언트 파일시스템 정보 저장 에러 : %v", err)
+	}
+	fmt.Println("파일 시스템 정보 저장")
 	return nil
 }

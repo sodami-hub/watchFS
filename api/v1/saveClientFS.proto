@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package clientfs.v1;
+
+option go_package = "github.com/sodami-hub/watchfs/api/v1";
+
+message ClientFS {
+    string initDir = 1;
+    repeated string directories = 2;
+    map<string,string> allFiles =3;
+    map<string,string> changes =4;
+}
