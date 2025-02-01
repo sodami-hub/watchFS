@@ -13,8 +13,8 @@ import (
 type fs struct {
 	initDir     string
 	directories []string
-	allFiles    []map[string]string
-	changes     []map[string]string // change 값이 변한 파일들의 슬라이스
+	allFiles    map[string]string
+	changes     map[string]string // change 값이 변한 파일들의 슬라이스
 }
 
 func NewWatcher(dir string) fs {
@@ -23,8 +23,8 @@ func NewWatcher(dir string) fs {
 	myWatcher := &fs{
 		initDir:     dir,
 		directories: initDir,
-		allFiles:    make([]map[string]string, 0, 30),
-		changes:     make([]map[string]string, 0, 20),
+		allFiles:    make(map[string]string),
+		changes:     make(map[string]string),
 	}
 
 	return *myWatcher
@@ -37,13 +37,13 @@ func (fs *fs) dirSearch() error {
 		}
 		if info.IsDir() {
 			if path != fs.initDir {
+				path = fs.initDir + path
 				fs.directories = append(fs.directories, path)
 			}
 		} else {
-			fileMap := make(map[string]string)
+			path = fs.initDir + path
 			modTime := info.ModTime().String()
-			fileMap[path] = modTime
-			fs.allFiles = append(fs.allFiles, fileMap)
+			fs.allFiles[path] = modTime
 		}
 		return nil
 	})
@@ -53,22 +53,18 @@ func (fs *fs) dirSearch() error {
 	return nil
 }
 
-func (fs fs) InitList() {
+func (fs fs) List() {
 	fmt.Println("디렉토리 리스트")
 	for _, dir := range fs.directories {
 		fmt.Println(dir)
 	}
 	fmt.Println("디렉토리 / 파일:수정시간 리스트")
-	for _, dir := range fs.allFiles {
-		for k, v := range dir {
-			fmt.Printf("filename : %s  //  modtime: %s\n", k, v)
-		}
+	for k, v := range fs.allFiles {
+		fmt.Printf("filename : %s  //  modtime: %s\n", k, v)
 	}
 	fmt.Println("변경 파일 목록")
-	for _, dir := range fs.changes {
-		for k, v := range dir {
-			fmt.Printf("filename : %s // 변경사항 : %s\n", k, v)
-		}
+	for k, v := range fs.changes {
+		fmt.Printf("filename : %s // 변경사항 : %s\n", k, v)
 	}
 }
 
@@ -87,6 +83,7 @@ func (fs *fs) Watch() error {
 	done := make(chan struct{})
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV)
+	var isDir bool = false
 
 	go func() {
 		for {
@@ -100,36 +97,65 @@ func (fs *fs) Watch() error {
 			case event := <-watcher.Events:
 				switch event.Op {
 				case fsnotify.Create:
-					fmt.Println("파일생성", event.Name)
 					info, err := os.Stat(event.Name)
 					if err != nil {
 						fmt.Println("생성된 파일 정보 가져오는 중 에러 발생")
 						done <- struct{}{}
 					}
 					if info.IsDir() {
-						fs.directories = append(fs.directories, info.Name())
-						watcher.Add(info.Name())
+						fmt.Println("디렉터리 생성")
+						fs.directories = append(fs.directories, event.Name)
+						watcher.Add(event.Name)
 					} else {
-						//modTime := info.ModTime()
-						fileMap := map[string]string{event.Name: "create"}
-						fs.changes = append(fs.changes, fileMap)
+						fmt.Println("파일생성")
+						fs.changes[event.Name] = "create"
 					}
-					fs.InitList()
+					fs.List()
 				case fsnotify.Remove:
 					for _, dir := range fs.directories {
 						if dir == event.Name {
 							fmt.Println("디렉터리 삭제", event.Name)
-							// 디렉터리를 삭제할 경우 해당 디렉터리가 포함된 모든 파일, 디렉터리에 대해서 delete 로 바꾸기
-						} else {
-							fmt.Println("파일삭제", event.Name)
-							fileMap := make(map[string]string)
-							fileMap[event.Name] = "delete"
-							fs.changes = append(fs.allFiles, fileMap)
+							isDir = true
+							break
 						}
 					}
-					fs.InitList()
+					if isDir {
+						for i, dir := range fs.directories {
+							if dir == event.Name {
+								fs.directories = append(fs.directories[:i], fs.directories[i+1:]...)
+								break
+							}
+						}
+					} else {
+						var deleteMarking bool = false
+						fmt.Println("파일삭제", event.Name)
+						for k := range fs.changes {
+							if k == event.Name {
+								delete(fs.changes, k)
+								deleteMarking = true
+								break
+							}
+						}
+						if !deleteMarking {
+							fs.changes[event.Name] = "delete"
+						}
+					}
+					fs.List()
+					isDir = false
 				case fsnotify.Write:
-					fmt.Println("수정")
+					fmt.Println("파일 수정")
+					for k := range fs.allFiles {
+						if k == event.Name {
+							fileMod, err := os.Stat(event.Name)
+							if err != nil {
+								fmt.Println("수정된 파일 정보 가져오기 에러")
+								done <- struct{}{}
+							}
+							fs.changes[event.Name] = fileMod.ModTime().String()
+							break
+						}
+					}
+					fs.List()
 				}
 			}
 		}
