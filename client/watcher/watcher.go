@@ -5,10 +5,11 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/fsnotify/fsnotify"
-	api "github.com/sodami-hub/watchfs/api/v1"
+	api "github.com/sodami-hub/watchfs/client/api/v1"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -19,17 +20,46 @@ type fs struct {
 	changes     map[string]string // change 값이 변한 파일들의 슬라이스
 }
 
-func NewWatcher(dir string) fs {
-	initDir := make([]string, 0, 10)
-	initDir = append(initDir, string(dir))
+func NewWatcher(dir string) error {
+	dirs := make([]string, 0, 10)
+	dirs = append(dirs, string(dir))
 	myWatcher := &fs{
 		initDir:     dir,
-		directories: initDir,
+		directories: dirs,
 		allFiles:    make(map[string]string),
 		changes:     make(map[string]string),
 	}
 
-	return *myWatcher
+	return myWatcher.Watch()
+}
+
+// 클라이언트의 root디렉터리 하위의 파일 시스템을 검색해서 fs 구조체를 전달하는 함수
+func searchDir(fs *fs) error {
+	if fs.initDir == "" {
+		fs.initDir = "./"
+	}
+	err := filepath.Walk(fs.initDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			if path != fs.initDir && !strings.HasPrefix(path, ".garage") {
+				path = fs.initDir + path
+				fs.directories = append(fs.directories, path)
+			}
+		} else {
+			if !strings.HasPrefix(path, ".garage") {
+				path = fs.initDir + path
+				modTime := info.ModTime().String()
+				fs.allFiles[path] = modTime
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error walking the path %v", err)
+	}
+	return nil
 }
 
 func (fs *fs) loadFS() error {
@@ -38,22 +68,7 @@ func (fs *fs) loadFS() error {
 		_ = file.Close()
 	}()
 	if err != nil {
-		err := filepath.Walk(fs.initDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				if path != fs.initDir && path != ".gagage" {
-					path = fs.initDir + path
-					fs.directories = append(fs.directories, path)
-				}
-			} else {
-				path = fs.initDir + path
-				modTime := info.ModTime().String()
-				fs.allFiles[path] = modTime
-			}
-			return nil
-		})
+		err = searchDir(fs)
 		if err != nil {
 			return fmt.Errorf("error walking the path %v", err)
 		}
@@ -68,21 +83,84 @@ func (fs *fs) loadFS() error {
 		}
 		defer file.Close()
 	} else {
-		var myfs api.ClientFS
+		fmt.Println("설정파일 있다.")
+		// 설정 파일이 있는 경우 저장된 파일 시스템과 현재 클라이언트의 파일 시스템의 상태가 같은지를 확인해야 된다.
+
+		// 저장된 파일시스템 정보를 가져온다.
+		var savedfs api.ClientFS
 		b, err := os.ReadFile("./.garage/clientFS")
 		if err != nil {
 			return err
 		}
-		err = proto.Unmarshal(b, &myfs)
+		err = proto.Unmarshal(b, &savedfs)
 		if err != nil {
 			return err
 		}
-		fs.initDir = myfs.InitDir
-		fs.allFiles = myfs.AllFiles
-		fs.directories = myfs.Directories
-		fs.changes = myfs.Changes
+
+		// 현재 클라이언트의 파일시스템 정보를 가져온다.
+		searchDir(fs)
+
+		savedDir := savedfs.Directories
+		savedAllFiles := savedfs.AllFiles
+		savedChanges := savedfs.Changes
+		if savedChanges == nil {
+			savedChanges = make(map[string]string)
+		}
+		// 저장된 데이터와 현재 클라이언트 파일시스템 정보를 비교해서 데이터를 수정한다.
+		for _, now := range fs.directories {
+			if !sliceContains(savedDir, now) {
+				savedDir = append(savedDir, now)
+			}
+		}
+
+		for k, v := range fs.allFiles {
+			if fsVal, exists := savedAllFiles[k]; exists {
+				if v != fsVal {
+					savedChanges[k] = v
+				}
+			} else {
+				savedChanges[k] = "create"
+			}
+		}
+
+		for k := range savedAllFiles {
+			if _, exists := fs.allFiles[k]; !exists {
+				savedChanges[k] = "delete"
+			}
+		}
+
+		for k, v := range savedChanges {
+			if v == "create" {
+				if _, exists := fs.allFiles[k]; !exists {
+					delete(savedChanges, k)
+				}
+			}
+		}
+
+		fs.initDir = savedfs.InitDir
+		fs.allFiles = savedAllFiles
+		fs.directories = savedDir
+		fs.changes = savedChanges
 	}
 	return nil
+}
+
+func NewFS(initDir string) *fs {
+	return &fs{
+		initDir:     initDir,
+		directories: []string{},
+		allFiles:    make(map[string]string),
+		changes:     make(map[string]string),
+	}
+}
+
+func sliceContains(slice []string, item string) bool {
+	for _, v := range slice {
+		if v == item {
+			return true
+		}
+	}
+	return false
 }
 
 func (fs *fs) saveFS() error {

@@ -1,15 +1,9 @@
 package main
 
 import (
-	"os"
-
-	"github.com/sodami-hub/watchfs/watcher"
+	"github.com/sodami-hub/watchfs/client/watcher"
 )
 
 func main() {
-	argument := os.Args[1]
-
-	myWatch := watcher.NewWatcher(argument)
-
-	myWatch.Watch()
+	_ = watcher.NewWatcher("./")
 }
