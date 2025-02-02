@@ -113,6 +113,12 @@ func (fs *fs) loadFS() error {
 			}
 		}
 
+		for i, v := range savedDir {
+			if !sliceContains(fs.directories, v) {
+				savedDir = append(savedDir[:i], savedDir[i+1:]...)
+			}
+		}
+
 		for k, v := range fs.allFiles {
 			if fsVal, exists := savedAllFiles[k]; exists {
 				if v != fsVal {
