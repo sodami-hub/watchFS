@@ -151,15 +151,6 @@ func (fs *fs) loadFS() error {
 	return nil
 }
 
-func NewFS(initDir string) *fs {
-	return &fs{
-		initDir:     initDir,
-		directories: []string{},
-		allFiles:    make(map[string]string),
-		changes:     make(map[string]string),
-	}
-}
-
 func sliceContains(slice []string, item string) bool {
 	for _, v := range slice {
 		if v == item {
@@ -187,7 +178,7 @@ func (fs *fs) saveFS() error {
 	return err
 }
 
-func (fs fs) List() {
+func (fs fs) Status() {
 	fmt.Println("디렉토리 리스트")
 	for _, dir := range fs.directories {
 		fmt.Println(dir)
@@ -202,6 +193,13 @@ func (fs fs) List() {
 	}
 }
 
+func (fs fs) ChangeFile() {
+	fmt.Println("변경 사항")
+	for k, v := range fs.changes {
+		fmt.Printf("[%s : %s]\n", k, v)
+	}
+}
+
 func (fs *fs) Watch() error {
 
 	err := fs.loadFS()
@@ -209,7 +207,7 @@ func (fs *fs) Watch() error {
 		return err
 	}
 
-	fs.List()
+	fs.Status()
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("make fsnotify error : %v", err)
@@ -246,7 +244,7 @@ func (fs *fs) Watch() error {
 						fmt.Println("파일생성")
 						fs.changes[event.Name] = "create"
 					}
-					fs.List()
+					fs.Status()
 				case fsnotify.Remove:
 					for _, dir := range fs.directories {
 						if dir == event.Name {
@@ -276,7 +274,7 @@ func (fs *fs) Watch() error {
 							fs.changes[event.Name] = "delete"
 						}
 					}
-					fs.List()
+					fs.Status()
 					isDir = false
 				case fsnotify.Write:
 					fmt.Println("파일 수정")
@@ -291,7 +289,7 @@ func (fs *fs) Watch() error {
 							break
 						}
 					}
-					fs.List()
+					fs.Status()
 				}
 			}
 		}
@@ -309,4 +307,10 @@ func (fs *fs) Watch() error {
 	}
 	fmt.Println("파일 시스템 정보 저장")
 	return nil
+}
+
+// github의 커밋과 같은 역할 로컬의 변경사항을 메시지와 함께 리모트에 푸시할 상태로 업데이트한다.
+// 아직 리모트에 푸쉬되는 것은 아님. 상태만 저장
+func (fs *fs) saveChanges(msg string) error {
+
 }

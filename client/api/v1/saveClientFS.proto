@@ -10,3 +10,14 @@ message ClientFS {
     map<string,string> allFiles =3;
     map<string,string> changes =4;
 }
+
+message SaveChanges {
+    string msg = 1;
+    map<string,string> changeInfo = 2;
+}
+
+message UserInfo {
+    string id = 1;
+    string pw = 2;
+    string garageName = 3;
+}

@@ -20,6 +20,26 @@ type fs struct {
 - changes : root 디렉터리 하위의 모든 경로안에서 변화를 감지하고 변화된 파일 또는 디렉터리의 정보를 저장하는 맵 슬라이스
 ***
 
+## api
+1. garage signin id/pw // garage 서비스 회원 가입 -> id중복 체크 후 이상없으면 회원 정보 DB저장
+1. garage conn id/pw  // garage 서비스에 접속
+2. garage init [garage 이름] 
+- 클라이언트의 현재 디렉터리를 'garage 이름'의 레포지토리로 설정하고 서버에는 id/garage_name 의 클라이언트 레포지토리를 만든다.
+- 해당 디렉터리에 대한 감시를 시작한다.
+
+3. 이후 해당 디렉터리에서 garage conn 명령으로 접속하면 해당 디렉터리의 감시를 진행한다.
+
+- api(클라이언트 측 구현)
+$ garage status -> 루트 디렉터리 아래 모든 파일 및 변경사항 출력
+$ garage changes -> 변경사항 출력
+$ garage save (message) -> 변경사항을 로컬에 병합하고, 변경사항을 설정 디렉터리에 저장
+$ garage story -> 변경 히스토리 출력
+
+- api(서버 실행)
+$ garage flush -> 클라이언트 로컬의 파일들을(변경사항들을) 똑같이 서버로 옮김
+
+***
+
 ## NewWatcher() 함수
 - watcher 인스턴스 생성하는 함수
 
