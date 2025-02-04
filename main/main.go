@@ -116,28 +116,29 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		err := StopProc(int(userInfo.ChildProcessPid))
+
+		fmt.Println(".garage/clientFS 파일을 초기화 또는 삭제해야 됨")
+		// err = os.Remove(".garage/clientFS")
+
+		err = StopProc(int(userInfo.ChildProcessPid))
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		err2 := os.Remove(".garage/clientFS")
-		if err2 != nil {
-			fmt.Println(err)
-			return
-		}
 		file, err := os.OpenFile(".garage/.user", os.O_RDWR|os.O_TRUNC, 0644)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
+
+		fmt.Println("다시 감시 시작.")
 		err = StartWatch(file, userInfo)
-		_ = file.Close()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
+		_ = file.Close()
 	case "savelist":
 
 	}

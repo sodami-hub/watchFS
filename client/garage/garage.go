@@ -171,7 +171,6 @@ func Save(msg string) error {
 	if err != nil {
 		return err
 	}
-
 	// 기존의 history가 있는지 확인
 	f, err := os.Open(".garage/history/history")
 	defer func() {
@@ -224,6 +223,7 @@ func Save(msg string) error {
 func MoveChangedFile(seq uint32) error {
 	myFS := &api.ClientFS{}
 	err := LoadClientFS(myFS)
+
 	if err != nil {
 		return err
 	}
@@ -234,6 +234,7 @@ func MoveChangedFile(seq uint32) error {
 	}
 	// 새롭게 생성된 디렉터리 만들기
 	for i, dir := range myFS.Directories {
+
 		if i == 0 {
 			continue
 		}
