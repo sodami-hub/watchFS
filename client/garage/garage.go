@@ -11,12 +11,13 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type UserInfo struct {
-	id         string
-	pw         string
-	garageName string
-	supervisor watcher.FS
-}
+// protobuf 사용으로 구조체를 사용하지 않개됨....
+// type UserInfo struct {
+// 	id         string
+// 	pw         string
+// 	garageName string
+// 	supervisor watcher.FS
+// }
 
 // 회원 가입
 /*
@@ -50,6 +51,9 @@ func GarageConn(id, pw string) error {
 		return err
 	}
 	f, err := os.OpenFile(".garage/.user", os.O_CREATE|os.O_WRONLY, 0644)
+	defer func() {
+		_ = f.Close()
+	}()
 	if err != nil {
 		return err
 	}
@@ -64,9 +68,12 @@ func GarageConn(id, pw string) error {
 // $ garage init garageName
 func GarageInit(garageName string) error {
 	// 유저 정보 가져오기
-	f, err := os.OpenFile(".garage/.user", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+	f, err := os.Open(".garage/.user")
+	defer func() {
+		_ = f.Close()
+	}()
 	if err != nil {
-		return err
+		return fmt.Errorf("현재 디렉터리에서 사용자 인증이 필요하다. \n garage conn id pw \n %v", err)
 	}
 	b := make([]byte, 1024)
 	n, err := f.Read(b)
@@ -76,14 +83,22 @@ func GarageInit(garageName string) error {
 	user := &api.UserInfo{}
 	proto.Unmarshal(b[:n], user)
 	user.GarageName = garageName
-	// 서버로 데이터 보내서 서버에 userId/[garageName] 디렉터리 생성
+
+	file, err := os.OpenFile(".garage/.user", os.O_RDWR|os.O_TRUNC, 0644)
+	defer func() {
+		_ = file.Close()
+	}()
+	if err != nil {
+		return err
+	}
+	// ToDo : 서버로 데이터 보내서 사용자 확인하고 서버에 userId/[garageName] 디렉터리 생성
 
 	protoM, err := proto.Marshal(user)
 	if err != nil {
 		return err
 	}
 
-	_, err = f.Write(protoM)
+	_, err = file.Write(protoM)
 	if err != nil {
 		return err
 	}
@@ -92,18 +107,15 @@ func GarageInit(garageName string) error {
 
 // & garage start
 func GarageWatch(user *api.UserInfo) error {
+
+	// ToDo : user를 서버에 보내서 사용자 및 레포지토리 확인!
+
 	myWatcher, err := watcher.NewWatcher("./")
 	if err != nil {
 		return err
 	}
-	userInfo := UserInfo{
-		id:         user.Id,
-		pw:         user.Pw,
-		garageName: user.GarageName,
-		supervisor: myWatcher,
-	}
 
-	userInfo.supervisor.Watch()
+	myWatcher.Watch()
 
 	return nil
 }
@@ -111,6 +123,9 @@ func GarageWatch(user *api.UserInfo) error {
 func ChangeFile() error {
 	myFS := &api.ClientFS{}
 	f, err := os.Open(".garage/clientFS")
+	defer func() {
+		_ = f.Close()
+	}()
 	if err != nil {
 		return err
 	}
@@ -131,6 +146,9 @@ func ChangeFile() error {
 func All() error {
 	myFS := &api.ClientFS{}
 	f, err := os.Open(".garage/clientFS")
+	defer func() {
+		_ = f.Close()
+	}()
 	if err != nil {
 		return err
 	}

@@ -70,9 +70,17 @@ func main() {
 
 		}
 	case "init":
-		_ = garage.GarageInit(args[1])
+		err = garage.GarageInit(args[1])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	case "start":
-		_ = garage.GarageWatch(userInfo)
+		err = garage.GarageWatch(userInfo)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	case "stop":
 		if userInfo.ChildProcessPid != 0 {
 			pgid := -int(userInfo.ChildProcessPid)
@@ -87,8 +95,16 @@ func main() {
 			fmt.Println("No child process to stop")
 		}
 	case "changes":
-		_ = garage.ChangeFile()
+		err = garage.ChangeFile()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	case "all":
-		_ = garage.All()
+		err = garage.All()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 }
