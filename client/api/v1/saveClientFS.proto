@@ -12,12 +12,13 @@ message ClientFS {
 }
 
 message SaveChanges {
-    string msg = 1;
-    map<string,string> changeInfo = 2;
+    uint32 seq = 3; // 변경파일을 저장할 디렉터리명에 사용할 시퀀스 정보
+    string msg = 1; // 변경 메세지
+    map<string,string> changeOrder = 2; // 변경된 파일 정보
 }
 
 message ChangeHistory {
-    repeated string history = 1;
+    repeated SaveChanges history = 1;   // 전체 변경 내역을 저장
 }
 
 message UserInfo {

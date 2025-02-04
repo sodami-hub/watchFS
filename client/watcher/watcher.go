@@ -81,7 +81,7 @@ func (fs *FS) loadFS() error {
 		if err != nil {
 			return fmt.Errorf("file create error : %v", err)
 		}
-		defer file.Close()
+		_ = file.Close()
 	} else {
 		fmt.Println("설정파일 있다.")
 		// 설정 파일이 있는 경우 저장된 파일 시스템과 현재 클라이언트의 파일 시스템의 상태가 같은지를 확인해야 된다.
@@ -162,6 +162,9 @@ func sliceContains(slice []string, item string) bool {
 
 func (fs *FS) saveFS() error {
 	file, err := os.OpenFile("./.garage/clientFS", os.O_WRONLY|os.O_CREATE, 0644)
+	defer func() {
+		_ = file.Close()
+	}()
 	if err != nil {
 		return err
 	}
@@ -216,7 +219,7 @@ func (fs *FS) Watch() error {
 
 	done := make(chan struct{})
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV, syscall.SIGKILL)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV)
 	var isDir bool = false
 
 	go func() {
@@ -241,7 +244,8 @@ func (fs *FS) Watch() error {
 					}
 					if info.IsDir() {
 						fmt.Println("디렉터리 생성")
-						fs.directories = append(fs.directories, event.Name)
+						path := event.Name
+						fs.directories = append(fs.directories, path)
 						watcher.Add(event.Name)
 					} else {
 						fmt.Println("파일생성")
@@ -315,11 +319,5 @@ func (fs *FS) Watch() error {
 		return fmt.Errorf("클라이언트 파일시스템 정보 저장 에러 : %v", err)
 	}
 	fmt.Println("파일 시스템 정보 저장")
-	return nil
-}
-
-// github의 커밋과 같은 역할 로컬의 변경사항을 메시지와 함께 리모트에 푸시할 상태로 업데이트한다.
-// 아직 리모트에 푸쉬되는 것은 아님. 상태만 저장
-func (fs *FS) saveChanges(msg string) error {
 	return nil
 }
