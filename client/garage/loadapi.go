@@ -21,8 +21,8 @@ func LoadClientFS(fs *api.ClientFS) error {
 	if err != nil {
 		return err
 	}
-	proto.Unmarshal(buf[:n], fs)
-	return nil
+	err = proto.Unmarshal(buf[:n], fs)
+	return err
 }
 
 func LoadUserInfo(user *api.UserInfo) error {
@@ -38,6 +38,28 @@ func LoadUserInfo(user *api.UserInfo) error {
 	if err != nil {
 		return err
 	}
-	proto.Unmarshal(b[:n], user)
+	err = proto.Unmarshal(b[:n], user)
+	return err
+}
+
+func LoadHistorySeq(seq *api.HistorySeq) error {
+	seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR, 0644)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = seqFile.Close()
+	}()
+
+	buf := make([]byte, 1024)
+	n, err := seqFile.Read(buf)
+	if err != nil {
+		return err
+	}
+
+	err = proto.Unmarshal(buf[:n], seq)
+	if err != nil {
+		return err
+	}
 	return nil
 }

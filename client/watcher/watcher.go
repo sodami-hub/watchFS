@@ -42,13 +42,14 @@ func searchDir(fs *FS) error {
 		if err != nil {
 			return err
 		}
+		bool := strings.Contains(path, ".garage")
 		if info.IsDir() {
-			if path != fs.initDir && !strings.HasPrefix(path, ".garage") {
+			if path != fs.initDir && !bool {
 				path = fs.initDir + path
 				fs.directories = append(fs.directories, path)
 			}
 		} else {
-			if !strings.HasPrefix(path, ".garage") {
+			if !bool {
 				path = fs.initDir + path
 				modTime := info.ModTime().String()
 				fs.allFiles[path] = modTime
@@ -210,7 +211,6 @@ func (fs *FS) Watch() error {
 		return err
 	}
 	fs.saveFS()
-	fs.Status()
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("make fsnotify error : %v", err)
@@ -271,8 +271,8 @@ func (fs *FS) Watch() error {
 							}
 						}
 					} else {
+						// 파일삭제
 						var deleteMarking bool = false
-						fmt.Println("파일삭제", event.Name)
 						for k := range fs.changes {
 							if k == event.Name {
 								delete(fs.changes, k)

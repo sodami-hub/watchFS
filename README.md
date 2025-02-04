@@ -24,11 +24,54 @@ type fs struct {
 - [garage] conn id pw  : id와 pw로 서비스 접속해서 사용자 인증하고 인증 정보파일 로컬에 생성
 - [garage] conn init garageName :  현재 디렉터리를 감시 디렉터리로 사용하고 서버에  garageName이라는 이름의 리모트 생성
 - [garage] conn : 현재 디렉터리의 감시 시작
-- [garage] all : 감시 디렉터리의 모든 파일과 변경사항 출력
-- [garage] changes: 감시 디렉터리의 변경사항 출력
+<center>
+  <img
+    src="readme_image/0001.jpg"
+	width=80%
+  />
+</center>
+<center>
+  <img
+    src="readme_image/0002.jpg"
+	width=80%
+  />
+</center>
 
-<추가해야되는 api>
-- saveChanges() -> 로컬의 변경사항을 서버 저장 대기리스트로 올리기. // 이과정이 없이는 리모트로 파일을 전송할 수 없다.
+- [garage] all : 감시 디렉터리의 모든 파일과 변경사항 출력
+
+<center>
+  <img
+    src="readme_image/0003.jpg"
+	width=80%
+  />
+</center>
+
+- [garage] changes: 감시 디렉터리의 변경사항 출력
+- [garage] save [message] : 현재 변경사항을 메시지와 함께 저장한다. 리모트에 복사할 내용을 저장하고, 변경된 파일들을 임시 디렉터리에 복사해둔다. 롤백을 하는데 사용한다.
+
+<center>
+  <img
+    src="readme_image/0004.jpg"
+	width=80%
+  />
+</center>
+<center>
+  <img
+    src="readme_image/0005.jpg"
+	width=80%
+  />
+</center>
+
+- [garage] history : 디렉터리의 변경 내역 전체를 출력한다.
+<center>
+  <img
+    src="readme_image/0006.png"
+	width=80%
+  />
+</center>
+
+- [garage] stop : 디렉터리 감시를 종료한다.
+
 - saveRemote() -> 서버 저장 대기중인 파일들을 리모트로 전송(복사) 
 
 

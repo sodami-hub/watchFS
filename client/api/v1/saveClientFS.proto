@@ -17,8 +17,8 @@ message SaveChanges {
     map<string,string> changeOrder = 2; // 변경된 파일 정보
 }
 
-message ChangeHistory {
-    repeated SaveChanges history = 1;   // 전체 변경 내역을 저장
+message HistorySeq {
+    uint32 seq = 1;
 }
 
 message UserInfo {

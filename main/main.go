@@ -41,6 +41,9 @@ func main() {
 	switch args[0] {
 	case "conn":
 		if hasUserInfo {
+			if len(args) != 1 {
+				return
+			}
 			file, err := os.OpenFile(".garage/.user", os.O_RDWR|os.O_TRUNC, 0644)
 			if err != nil {
 				fmt.Println(err)
@@ -53,6 +56,9 @@ func main() {
 			}
 			_ = file.Close()
 		} else {
+			if len(args) != 3 {
+				return
+			}
 			err = garage.GarageConn(args[1], args[2])
 			if err != nil {
 				fmt.Println(err)
@@ -98,13 +104,6 @@ func main() {
 			return
 		}
 
-		fmt.Println(".garage/clientFS 파일을 초기화 또는 삭제해야 됨")
-		// err = os.Remove(".garage/clientFS")
-		// if err != nil {
-		// 	fmt.Println(err)
-		// 	return
-		// }
-
 		err = StopProc(int(userInfo.ChildProcessPid))
 		if err != nil {
 			fmt.Println(err)
@@ -123,15 +122,18 @@ func main() {
 			return
 		}
 
-		fmt.Println("다시 감시 시작.")
 		err = StartWatch(file, userInfo, true)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 		_ = file.Close()
-	case "savelist":
-
+	case "history":
+		err = garage.ShowHistory()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 }
 

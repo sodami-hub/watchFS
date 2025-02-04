@@ -14,12 +14,12 @@ import (
 )
 
 // protobuf 사용으로 구조체를 사용하지 않개됨....
-type UserInfo struct {
-	id              string
-	pw              string
-	garageName      string
-	childProcessPid int32
-}
+// type UserInfo struct {
+// 	id              string
+// 	pw              string
+// 	garageName      string
+// 	childProcessPid int32
+// }
 
 // 회원 가입
 /*
@@ -152,15 +152,16 @@ func All() error {
 	return nil
 }
 
-type saveChanges struct {
-	seq         uint32
-	msg         string
-	changeOrder map[string]string
-}
+// type saveChanges struct {
+// 	seq         uint32
+// 	msg         string
+// 	changeOrder map[string]string
+// }
 
-type changeHistory struct {
-	history []saveChanges
-}
+// type changeHistory struct {
+// 	seq     uint32
+// 	history []saveChanges
+// }
 
 // github의 커밋과 같은 역할 로컬의 변경사항을 메시지와 함께 리모트에 푸시할 상태로 업데이트한다.
 // 아직 리모트에 푸쉬되는 것은 아님. 상태만 저장
@@ -172,7 +173,7 @@ func Save(msg string) error {
 		return err
 	}
 	// 기존의 history가 있는지 확인
-	f, err := os.Open(".garage/history/history")
+	f, err := os.Open(".garage/history/historySeq")
 	defer func() {
 		_ = f.Close()
 	}()
@@ -185,20 +186,23 @@ func Save(msg string) error {
 		}
 		saveInfo := &api.SaveChanges{
 			Msg:         msg,
-			Seq:         0,
+			Seq:         1,
 			ChangeOrder: myFS.Changes,
 		}
-		histories := make([]*api.SaveChanges, 0)
-		histories = append(histories, saveInfo)
-		history := &api.ChangeHistory{
-			History: histories,
+
+		historySeq := &api.HistorySeq{
+			Seq: 1,
 		}
 
-		hisFile, err := os.OpenFile(".garage/history/myHistory", os.O_CREATE|os.O_WRONLY, 0644)
+		hisFile, err := os.OpenFile(".garage/history/historySeq", os.O_CREATE|os.O_RDWR, 0644)
 		if err != nil {
 			return err
 		}
-		b, err := proto.Marshal(history)
+		defer func() {
+			_ = hisFile.Close()
+		}()
+
+		b, err := proto.Marshal(historySeq)
 		if err != nil {
 			return err
 		}
@@ -207,33 +211,100 @@ func Save(msg string) error {
 			return err
 		}
 		// 수정/생성 된 파일을 다른 디렉터리로 이동(나중에 롤백할 수 있도록)
-		err = MoveChangedFile(saveInfo.Seq)
+		err = MoveChangedFile(saveInfo)
+		if err != nil {
+			return err
+		}
+	} else {
+		//기존의 history가 있는경우
+		seq := &api.HistorySeq{}
+		err := LoadHistorySeq(seq)
+		if err != nil {
+			return err
+		}
+		// seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR, 0644)
+		// if err != nil {
+		// 	return err
+		// }
+		// defer func() {
+		// 	_ = seqFile.Close()
+		// }()
+
+		// buf := make([]byte, 1024)
+		// n, err := seqFile.Read(buf)
+		// if err != nil {
+		// 	return err
+		// }
+
+		// err = proto.Unmarshal(buf[:n], seq)
+		// if err != nil {
+		// 	return err
+		// }
+
+		seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR, 0644)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = seqFile.Close()
+		}()
+		seq.Seq = seq.Seq + 1
+		b, err := proto.Marshal(seq)
+		if err != nil {
+			return err
+		}
+		_, err = seqFile.Write(b)
 		if err != nil {
 			return err
 		}
 
-	} else {
-		// 기존의 history가 있는경우
+		history := &api.SaveChanges{
+			Seq:         seq.Seq,
+			Msg:         msg,
+			ChangeOrder: myFS.Changes,
+		}
 
+		// 수정/생성 된 파일을 다른 디렉터리로 이동(나중에 롤백할 수 있도록)
+		err = MoveChangedFile(history)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func MoveChangedFile(seq uint32) error {
+func MoveChangedFile(saveInfo *api.SaveChanges) error {
 	myFS := &api.ClientFS{}
 	err := LoadClientFS(myFS)
 
 	if err != nil {
 		return err
 	}
-	savePath := ".garage/history/changeOrder_" + strconv.Itoa(int(seq))
+	savePath := ".garage/history/changeOrder_" + strconv.Itoa(int(saveInfo.Seq))
 	err = os.Mkdir(savePath, 0755)
 	if err != nil {
 		return err
 	}
+
+	file, err := os.OpenFile(savePath+"/"+"save_"+strconv.Itoa(int(saveInfo.Seq)), os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	b, err := proto.Marshal(saveInfo)
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(b)
+	if err != nil {
+		return err
+	}
+
 	// 새롭게 생성된 디렉터리 만들기
 	for i, dir := range myFS.Directories {
-
 		if i == 0 {
 			continue
 		}
@@ -275,5 +346,36 @@ func MoveChangedFile(seq uint32) error {
 		_ = file.Close()
 		_ = savedFile.Close()
 	}
+	return nil
+}
+
+func ShowHistory() error {
+	seq := &api.HistorySeq{}
+	err := LoadHistorySeq(seq)
+	if err != nil {
+		return err
+	}
+	num := seq.Seq
+
+	for i := 1; i <= int(num); i++ {
+		path := ".garage/history/changeOrder_" + strconv.Itoa(i) + "/save_" + strconv.Itoa(i)
+
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		info := &api.SaveChanges{}
+
+		proto.Unmarshal(b, info)
+
+		fmt.Printf("save Num - %d\n", info.Seq)
+		fmt.Printf("save Message - %s\n", info.Msg)
+		fmt.Println("[change orders]")
+		for k, v := range info.ChangeOrder {
+			fmt.Printf("[%s : %s]\n", k, v)
+		}
+		fmt.Println()
+	}
+
 	return nil
 }
