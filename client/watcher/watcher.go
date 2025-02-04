@@ -13,28 +13,28 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type fs struct {
+type FS struct {
 	initDir     string
 	directories []string
 	allFiles    map[string]string
 	changes     map[string]string // change 값이 변한 파일들의 슬라이스
 }
 
-func NewWatcher(dir string) error {
+func NewWatcher(dir string) (FS, error) {
 	dirs := make([]string, 0, 10)
 	dirs = append(dirs, string(dir))
-	myWatcher := &fs{
+	myWatcher := &FS{
 		initDir:     dir,
 		directories: dirs,
 		allFiles:    make(map[string]string),
 		changes:     make(map[string]string),
 	}
 
-	return myWatcher.Watch()
+	return *myWatcher, nil
 }
 
 // 클라이언트의 root디렉터리 하위의 파일 시스템을 검색해서 fs 구조체를 전달하는 함수
-func searchDir(fs *fs) error {
+func searchDir(fs *FS) error {
 	if fs.initDir == "" {
 		fs.initDir = "./"
 	}
@@ -62,7 +62,7 @@ func searchDir(fs *fs) error {
 	return nil
 }
 
-func (fs *fs) loadFS() error {
+func (fs *FS) loadFS() error {
 	file, err := os.Open("./.garage/clientFS")
 	defer func() {
 		_ = file.Close()
@@ -160,7 +160,7 @@ func sliceContains(slice []string, item string) bool {
 	return false
 }
 
-func (fs *fs) saveFS() error {
+func (fs *FS) saveFS() error {
 	file, err := os.OpenFile("./.garage/clientFS", os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -178,7 +178,7 @@ func (fs *fs) saveFS() error {
 	return err
 }
 
-func (fs fs) Status() {
+func (fs FS) Status() {
 	fmt.Println("디렉토리 리스트")
 	for _, dir := range fs.directories {
 		fmt.Println(dir)
@@ -193,20 +193,20 @@ func (fs fs) Status() {
 	}
 }
 
-func (fs fs) ChangeFile() {
+func (fs FS) ChangeFile() {
 	fmt.Println("변경 사항")
 	for k, v := range fs.changes {
 		fmt.Printf("[%s : %s]\n", k, v)
 	}
 }
 
-func (fs *fs) Watch() error {
+func (fs *FS) Watch() error {
 
 	err := fs.loadFS()
 	if err != nil {
 		return err
 	}
-
+	fs.saveFS()
 	fs.Status()
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -216,24 +216,27 @@ func (fs *fs) Watch() error {
 
 	done := make(chan struct{})
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGSEGV, syscall.SIGKILL)
 	var isDir bool = false
 
 	go func() {
 		for {
 			select {
+
 			case <-sigChan:
 				fmt.Println("인터럽트 발생 종료...")
 				done <- struct{}{}
 				return
 			case err := <-watcher.Errors:
 				fmt.Println("error:", err)
+				fs.saveFS()
 			case event := <-watcher.Events:
 				switch event.Op {
 				case fsnotify.Create:
 					info, err := os.Stat(event.Name)
 					if err != nil {
 						fmt.Println("생성된 파일 정보 가져오는 중 에러 발생")
+						fs.saveFS()
 						done <- struct{}{}
 					}
 					if info.IsDir() {
@@ -244,6 +247,7 @@ func (fs *fs) Watch() error {
 						fmt.Println("파일생성")
 						fs.changes[event.Name] = "create"
 					}
+					fs.saveFS()
 					fs.Status()
 				case fsnotify.Remove:
 					for _, dir := range fs.directories {
@@ -257,6 +261,7 @@ func (fs *fs) Watch() error {
 						for i, dir := range fs.directories {
 							if dir == event.Name {
 								fs.directories = append(fs.directories[:i], fs.directories[i+1:]...)
+								fs.saveFS()
 								break
 							}
 						}
@@ -267,13 +272,16 @@ func (fs *fs) Watch() error {
 							if k == event.Name {
 								delete(fs.changes, k)
 								deleteMarking = true
+
 								break
 							}
 						}
 						if !deleteMarking {
 							fs.changes[event.Name] = "delete"
+
 						}
 					}
+					fs.saveFS()
 					fs.Status()
 					isDir = false
 				case fsnotify.Write:
@@ -289,6 +297,7 @@ func (fs *fs) Watch() error {
 							break
 						}
 					}
+					fs.saveFS()
 					fs.Status()
 				}
 			}
@@ -311,6 +320,6 @@ func (fs *fs) Watch() error {
 
 // github의 커밋과 같은 역할 로컬의 변경사항을 메시지와 함께 리모트에 푸시할 상태로 업데이트한다.
 // 아직 리모트에 푸쉬되는 것은 아님. 상태만 저장
-func (fs *fs) saveChanges(msg string) error {
-
+func (fs *FS) saveChanges(msg string) error {
+	return nil
 }

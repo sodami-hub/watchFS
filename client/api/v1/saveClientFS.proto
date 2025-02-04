@@ -16,8 +16,13 @@ message SaveChanges {
     map<string,string> changeInfo = 2;
 }
 
+message ChangeHistory {
+    repeated string history = 1;
+}
+
 message UserInfo {
     string id = 1;
     string pw = 2;
     string garageName = 3;
+    int32 childProcessPid =4;
 }
