@@ -52,26 +52,6 @@ func main() {
 				return
 			}
 			_ = file.Close()
-			// 설정파일이 있고 garage start 명령을 입력하면 자식 쉘에서 감시를 시작한다.
-			// cmd := exec.Command("go", "run", "main.go", "start")
-			// cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} // 새로운 프로세스 그룹 생성
-			// err := cmd.Start()
-			// if err != nil {
-			// 	fmt.Println(err)
-			// 	return
-			// }
-			// childProcess = cmd.Process
-			// fmt.Printf("Started child process with PID %d\n", childProcess.Pid)
-			// userInfo.ChildProcessPid = int32(childProcess.Pid)
-			// b, err := proto.Marshal(userInfo)
-			// if err != nil {
-			// 	fmt.Println(err)
-			// 	return
-			// }
-			// _, err = f.Write(b)
-			// if err != nil {
-			// 	fmt.Println(err)
-			// }
 		} else {
 			err = garage.GarageConn(args[1], args[2])
 			if err != nil {
@@ -111,6 +91,7 @@ func main() {
 			return
 		}
 	case "save": // 로컬의 변경사항을 리모트에 저장하기 위해서 변경 내용을 저장(commit)
+
 		err = garage.Save(args[1])
 		if err != nil {
 			fmt.Println(err)
@@ -119,8 +100,18 @@ func main() {
 
 		fmt.Println(".garage/clientFS 파일을 초기화 또는 삭제해야 됨")
 		// err = os.Remove(".garage/clientFS")
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
 
 		err = StopProc(int(userInfo.ChildProcessPid))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		err = os.Remove(".garage/clientFS")
 		if err != nil {
 			fmt.Println(err)
 			return

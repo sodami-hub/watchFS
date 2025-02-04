@@ -225,9 +225,8 @@ func (fs *FS) Watch() error {
 	go func() {
 		for {
 			select {
-
 			case <-sigChan:
-				fmt.Println("인터럽트 발생 종료...")
+				// 인터럽트 발생 종료
 				done <- struct{}{}
 				return
 			case err := <-watcher.Errors:
@@ -238,21 +237,23 @@ func (fs *FS) Watch() error {
 				case fsnotify.Create:
 					info, err := os.Stat(event.Name)
 					if err != nil {
-						fmt.Println("생성된 파일 정보 가져오는 중 에러 발생")
+						// 생성된 파일 정보 가져오는 중 에러 발생
 						fs.saveFS()
 						done <- struct{}{}
 					}
 					if info.IsDir() {
-						fmt.Println("디렉터리 생성")
+						// 디렉터리 생성
 						path := event.Name
 						fs.directories = append(fs.directories, path)
 						watcher.Add(event.Name)
 					} else {
-						fmt.Println("파일생성")
+						// 파일생성
+						if bool := strings.HasPrefix(event.Name, "./"); !bool {
+							event.Name = "./" + event.Name
+						}
 						fs.changes[event.Name] = "create"
 					}
 					fs.saveFS()
-					fs.Status()
 				case fsnotify.Remove:
 					for _, dir := range fs.directories {
 						if dir == event.Name {
@@ -275,21 +276,22 @@ func (fs *FS) Watch() error {
 						for k := range fs.changes {
 							if k == event.Name {
 								delete(fs.changes, k)
+								fs.saveFS()
 								deleteMarking = true
-
 								break
 							}
 						}
 						if !deleteMarking {
 							fs.changes[event.Name] = "delete"
-
+							fs.saveFS()
 						}
 					}
 					fs.saveFS()
-					fs.Status()
 					isDir = false
 				case fsnotify.Write:
-					fmt.Println("파일 수정")
+					if bool := strings.HasPrefix(event.Name, "./"); !bool {
+						event.Name = "./" + event.Name
+					}
 					for k := range fs.allFiles {
 						if k == event.Name {
 							fileMod, err := os.Stat(event.Name)
@@ -298,11 +300,11 @@ func (fs *FS) Watch() error {
 								done <- struct{}{}
 							}
 							fs.changes[event.Name] = fileMod.ModTime().String()
+							fs.saveFS()
 							break
 						}
 					}
 					fs.saveFS()
-					fs.Status()
 				}
 			}
 		}
@@ -314,10 +316,5 @@ func (fs *FS) Watch() error {
 		}
 	}
 	<-done
-	err = fs.saveFS()
-	if err != nil {
-		return fmt.Errorf("클라이언트 파일시스템 정보 저장 에러 : %v", err)
-	}
-	fmt.Println("파일 시스템 정보 저장")
 	return nil
 }
