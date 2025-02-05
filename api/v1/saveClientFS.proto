@@ -46,6 +46,6 @@ message Files {
     repeated File files = 1;
 }
 
-message Respons {
+message Response {
     string message =1;
 }

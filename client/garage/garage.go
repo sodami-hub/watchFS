@@ -191,7 +191,8 @@ func Save(msg string) error {
 		}
 
 		historySeq := &api.HistorySeq{
-			Seq: 1,
+			Seq:       1,
+			UploadSeq: 0,
 		}
 
 		hisFile, err := os.OpenFile(".garage/history/historySeq", os.O_CREATE|os.O_RDWR, 0644)
@@ -211,7 +212,7 @@ func Save(msg string) error {
 			return err
 		}
 		// 수정/생성 된 파일을 다른 디렉터리로 이동(나중에 롤백할 수 있도록)
-		err = MoveChangedFile(saveInfo)
+		err = MoveChangedFileAndSaveHistory(saveInfo)
 		if err != nil {
 			return err
 		}
@@ -246,7 +247,7 @@ func Save(msg string) error {
 		}
 
 		// 수정/생성 된 파일을 다른 디렉터리로 이동(나중에 롤백할 수 있도록)
-		err = MoveChangedFile(history)
+		err = MoveChangedFileAndSaveHistory(history)
 		if err != nil {
 			return err
 		}
@@ -254,7 +255,7 @@ func Save(msg string) error {
 	return nil
 }
 
-func MoveChangedFile(saveInfo *api.SaveChanges) error {
+func MoveChangedFileAndSaveHistory(saveInfo *api.SaveChanges) error {
 	myFS := &api.ClientFS{}
 	err := LoadClientFS(myFS)
 
@@ -338,6 +339,9 @@ func ShowHistory() error {
 	}
 	num := seq.Seq
 
+	if seq.UploadSeq == 0 {
+		fmt.Println("리모트에 저장된 파일이 없다.")
+	}
 	for i := 1; i <= int(num); i++ {
 		path := ".garage/history/changeOrder_" + strconv.Itoa(i) + "/save_" + strconv.Itoa(i)
 
@@ -356,6 +360,10 @@ func ShowHistory() error {
 			fmt.Printf("[%s : %s]\n", k, v)
 		}
 		fmt.Println()
+
+		if i == int(seq.UploadSeq) {
+			fmt.Println("----------------------------- complete upload to remote")
+		}
 	}
 
 	return nil
