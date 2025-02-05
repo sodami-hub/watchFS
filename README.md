@@ -76,7 +76,10 @@ type fs struct {
 
 
 ## 클라이언트 <-> 서버 api
-$ garage flush -> 클라이언트 로컬의 파일들을(변경사항들을) 똑같이 서버로 옮김
+- 회원가입 : "/join";  POST; body - id, pw
+- 사용자 인증 : "/cert"; POST; body - id,pw
+- garage 생성 : "/init"; POST; body - garage name
+- 로컬 파일 저장 : "/savefile"; POST; body - files 
 
 ***
 

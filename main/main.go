@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	api "github.com/sodami-hub/watchfs/client/api/v1"
+	api "github.com/sodami-hub/watchfs/api/v1"
 	"github.com/sodami-hub/watchfs/client/garage"
 	"google.golang.org/protobuf/proto"
 )

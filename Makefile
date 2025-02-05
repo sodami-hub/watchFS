@@ -1,6 +1,6 @@
 # protocolbuf 컴파일 명령
 compile:
-	protoc client/api/v1/*.proto \
+	protoc api/v1/*.proto \
 	--go_out=. \
 	--go_opt=paths=source_relative \
 	--proto_path=.
@@ -13,4 +13,3 @@ compile:
 # 		--go_opt=paths=source_relative \
 # 		--go-grpc_opt=paths=source_relative \
 # 		--proto_path=.
-

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	api "github.com/sodami-hub/watchfs/client/api/v1"
+	api "github.com/sodami-hub/watchfs/api/v1"
 	"github.com/sodami-hub/watchfs/client/watcher"
 	"google.golang.org/protobuf/proto"
 )
@@ -222,25 +222,6 @@ func Save(msg string) error {
 		if err != nil {
 			return err
 		}
-		// seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR, 0644)
-		// if err != nil {
-		// 	return err
-		// }
-		// defer func() {
-		// 	_ = seqFile.Close()
-		// }()
-
-		// buf := make([]byte, 1024)
-		// n, err := seqFile.Read(buf)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// err = proto.Unmarshal(buf[:n], seq)
-		// if err != nil {
-		// 	return err
-		// }
-
 		seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR, 0644)
 		if err != nil {
 			return err

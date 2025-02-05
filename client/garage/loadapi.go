@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	api "github.com/sodami-hub/watchfs/client/api/v1"
+	api "github.com/sodami-hub/watchfs/api/v1"
 	"google.golang.org/protobuf/proto"
 )
 
