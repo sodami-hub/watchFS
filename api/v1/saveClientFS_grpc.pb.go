@@ -13,191 +13,191 @@ import (
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion7
 
-// GarageServiceClient is the client API for GarageService service.
+// GarageClient is the client API for Garage service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type GarageServiceClient interface {
+type GarageClient interface {
 	Join(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error)
 	Cert(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error)
 	InitGarage(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error)
-	UploadFiles(ctx context.Context, in *Files, opts ...grpc.CallOption) (*Response, error)
+	UploadFiles(ctx context.Context, in *File, opts ...grpc.CallOption) (*Response, error)
 }
 
-type garageServiceClient struct {
+type garageClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewGarageServiceClient(cc grpc.ClientConnInterface) GarageServiceClient {
-	return &garageServiceClient{cc}
+func NewGarageClient(cc grpc.ClientConnInterface) GarageClient {
+	return &garageClient{cc}
 }
 
-func (c *garageServiceClient) Join(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error) {
+func (c *garageClient) Join(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, "/clientfs.v1.GarageService/Join", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/clientfs.v1.Garage/Join", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *garageServiceClient) Cert(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error) {
+func (c *garageClient) Cert(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, "/clientfs.v1.GarageService/Cert", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/clientfs.v1.Garage/Cert", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *garageServiceClient) InitGarage(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error) {
+func (c *garageClient) InitGarage(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, "/clientfs.v1.GarageService/InitGarage", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/clientfs.v1.Garage/InitGarage", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *garageServiceClient) UploadFiles(ctx context.Context, in *Files, opts ...grpc.CallOption) (*Response, error) {
+func (c *garageClient) UploadFiles(ctx context.Context, in *File, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, "/clientfs.v1.GarageService/UploadFiles", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/clientfs.v1.Garage/UploadFiles", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// GarageServiceServer is the server API for GarageService service.
-// All implementations must embed UnimplementedGarageServiceServer
+// GarageServer is the server API for Garage service.
+// All implementations must embed UnimplementedGarageServer
 // for forward compatibility
-type GarageServiceServer interface {
+type GarageServer interface {
 	Join(context.Context, *UserInfo) (*Response, error)
 	Cert(context.Context, *UserInfo) (*Response, error)
 	InitGarage(context.Context, *UserInfo) (*Response, error)
-	UploadFiles(context.Context, *Files) (*Response, error)
-	mustEmbedUnimplementedGarageServiceServer()
+	UploadFiles(context.Context, *File) (*Response, error)
+	mustEmbedUnimplementedGarageServer()
 }
 
-// UnimplementedGarageServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedGarageServiceServer struct {
+// UnimplementedGarageServer must be embedded to have forward compatible implementations.
+type UnimplementedGarageServer struct {
 }
 
-func (UnimplementedGarageServiceServer) Join(context.Context, *UserInfo) (*Response, error) {
+func (UnimplementedGarageServer) Join(context.Context, *UserInfo) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
 }
-func (UnimplementedGarageServiceServer) Cert(context.Context, *UserInfo) (*Response, error) {
+func (UnimplementedGarageServer) Cert(context.Context, *UserInfo) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Cert not implemented")
 }
-func (UnimplementedGarageServiceServer) InitGarage(context.Context, *UserInfo) (*Response, error) {
+func (UnimplementedGarageServer) InitGarage(context.Context, *UserInfo) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InitGarage not implemented")
 }
-func (UnimplementedGarageServiceServer) UploadFiles(context.Context, *Files) (*Response, error) {
+func (UnimplementedGarageServer) UploadFiles(context.Context, *File) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadFiles not implemented")
 }
-func (UnimplementedGarageServiceServer) mustEmbedUnimplementedGarageServiceServer() {}
+func (UnimplementedGarageServer) mustEmbedUnimplementedGarageServer() {}
 
-// UnsafeGarageServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to GarageServiceServer will
+// UnsafeGarageServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to GarageServer will
 // result in compilation errors.
-type UnsafeGarageServiceServer interface {
-	mustEmbedUnimplementedGarageServiceServer()
+type UnsafeGarageServer interface {
+	mustEmbedUnimplementedGarageServer()
 }
 
-func RegisterGarageServiceServer(s *grpc.Server, srv GarageServiceServer) {
-	s.RegisterService(&_GarageService_serviceDesc, srv)
+func RegisterGarageServer(s *grpc.Server, srv GarageServer) {
+	s.RegisterService(&_Garage_serviceDesc, srv)
 }
 
-func _GarageService_Join_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Garage_Join_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UserInfo)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GarageServiceServer).Join(ctx, in)
+		return srv.(GarageServer).Join(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clientfs.v1.GarageService/Join",
+		FullMethod: "/clientfs.v1.Garage/Join",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GarageServiceServer).Join(ctx, req.(*UserInfo))
+		return srv.(GarageServer).Join(ctx, req.(*UserInfo))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GarageService_Cert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Garage_Cert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UserInfo)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GarageServiceServer).Cert(ctx, in)
+		return srv.(GarageServer).Cert(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clientfs.v1.GarageService/Cert",
+		FullMethod: "/clientfs.v1.Garage/Cert",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GarageServiceServer).Cert(ctx, req.(*UserInfo))
+		return srv.(GarageServer).Cert(ctx, req.(*UserInfo))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GarageService_InitGarage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Garage_InitGarage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UserInfo)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GarageServiceServer).InitGarage(ctx, in)
+		return srv.(GarageServer).InitGarage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clientfs.v1.GarageService/InitGarage",
+		FullMethod: "/clientfs.v1.Garage/InitGarage",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GarageServiceServer).InitGarage(ctx, req.(*UserInfo))
+		return srv.(GarageServer).InitGarage(ctx, req.(*UserInfo))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GarageService_UploadFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Files)
+func _Garage_UploadFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(File)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GarageServiceServer).UploadFiles(ctx, in)
+		return srv.(GarageServer).UploadFiles(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clientfs.v1.GarageService/UploadFiles",
+		FullMethod: "/clientfs.v1.Garage/UploadFiles",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GarageServiceServer).UploadFiles(ctx, req.(*Files))
+		return srv.(GarageServer).UploadFiles(ctx, req.(*File))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _GarageService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "clientfs.v1.GarageService",
-	HandlerType: (*GarageServiceServer)(nil),
+var _Garage_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "clientfs.v1.Garage",
+	HandlerType: (*GarageServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Join",
-			Handler:    _GarageService_Join_Handler,
+			Handler:    _Garage_Join_Handler,
 		},
 		{
 			MethodName: "Cert",
-			Handler:    _GarageService_Cert_Handler,
+			Handler:    _Garage_Cert_Handler,
 		},
 		{
 			MethodName: "InitGarage",
-			Handler:    _GarageService_InitGarage_Handler,
+			Handler:    _Garage_InitGarage_Handler,
 		},
 		{
 			MethodName: "UploadFiles",
-			Handler:    _GarageService_UploadFiles_Handler,
+			Handler:    _Garage_UploadFiles_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

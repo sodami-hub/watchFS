@@ -30,16 +30,17 @@ message UserInfo {
     int32 childProcessPid =4;
 }
 
-service GarageService {
+service Garage {
     rpc Join(UserInfo) returns (Response){}
     rpc Cert(UserInfo) returns (Response) {}
     rpc InitGarage(UserInfo) returns (Response) {}
-    rpc UploadFiles(Files) returns (Response) {}
+    rpc UploadFiles(File) returns (Response) {}
 }
 
 message File {
     string filePath = 1;
     bytes fileData = 2;
+    bool endFile =3;
 }
 
 message Files {
