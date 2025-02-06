@@ -13,7 +13,7 @@ CREATE TABLE garages (
 );
 */
 
-package main
+package server
 
 import (
 	"context"

@@ -156,7 +156,7 @@ func StopProc(pgid int) error {
 func StartWatch(file *os.File, userInfo *api.UserInfo, flag bool) error {
 
 	// 설정파일이 있고 garage start 명령을 입력하면 자식 쉘에서 감시를 시작한다.
-	cmd := exec.Command("go", "run", "main.go", "start")
+	cmd := exec.Command("go", "run", "client.go", "start")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} // 새로운 프로세스 그룹 생성
 	err := cmd.Start()
 	if err != nil {
