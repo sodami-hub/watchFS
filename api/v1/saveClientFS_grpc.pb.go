@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GarageClient interface {
 	Join(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error)
-	Cert(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error)
+	LogIn(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error)
 	InitGarage(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error)
 	UploadFiles(ctx context.Context, in *File, opts ...grpc.CallOption) (*Response, error)
 }
@@ -40,9 +40,9 @@ func (c *garageClient) Join(ctx context.Context, in *UserInfo, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *garageClient) Cert(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error) {
+func (c *garageClient) LogIn(ctx context.Context, in *UserInfo, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
-	err := c.cc.Invoke(ctx, "/clientfs.v1.Garage/Cert", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/clientfs.v1.Garage/LogIn", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (c *garageClient) UploadFiles(ctx context.Context, in *File, opts ...grpc.C
 // for forward compatibility
 type GarageServer interface {
 	Join(context.Context, *UserInfo) (*Response, error)
-	Cert(context.Context, *UserInfo) (*Response, error)
+	LogIn(context.Context, *UserInfo) (*Response, error)
 	InitGarage(context.Context, *UserInfo) (*Response, error)
 	UploadFiles(context.Context, *File) (*Response, error)
 	mustEmbedUnimplementedGarageServer()
@@ -85,8 +85,8 @@ type UnimplementedGarageServer struct {
 func (UnimplementedGarageServer) Join(context.Context, *UserInfo) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
 }
-func (UnimplementedGarageServer) Cert(context.Context, *UserInfo) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Cert not implemented")
+func (UnimplementedGarageServer) LogIn(context.Context, *UserInfo) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LogIn not implemented")
 }
 func (UnimplementedGarageServer) InitGarage(context.Context, *UserInfo) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method InitGarage not implemented")
@@ -125,20 +125,20 @@ func _Garage_Join_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Garage_Cert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Garage_LogIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UserInfo)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GarageServer).Cert(ctx, in)
+		return srv.(GarageServer).LogIn(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clientfs.v1.Garage/Cert",
+		FullMethod: "/clientfs.v1.Garage/LogIn",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GarageServer).Cert(ctx, req.(*UserInfo))
+		return srv.(GarageServer).LogIn(ctx, req.(*UserInfo))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -188,8 +188,8 @@ var _Garage_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Garage_Join_Handler,
 		},
 		{
-			MethodName: "Cert",
-			Handler:    _Garage_Cert_Handler,
+			MethodName: "LogIn",
+			Handler:    _Garage_LogIn_Handler,
 		},
 		{
 			MethodName: "InitGarage",

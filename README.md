@@ -21,9 +21,9 @@ type fs struct {
 ***
 
 ## 클라이언트 로컬 api
-- [garage] conn id pw  : id와 pw로 서비스 접속해서 사용자 인증하고 인증 정보파일 로컬에 생성
-- [garage] conn init garageName :  현재 디렉터리를 감시 디렉터리로 사용하고 서버에  garageName이라는 이름의 리모트 생성
-- [garage] conn : 현재 디렉터리의 감시 시작
+- [garage] conn id pw  : id와 pw로 서비스 접속해서 사용자 인증하고 사용자 정보파일 로컬에 생성
+- [garage] conn init garageName :  현재 디렉터리를 감시 디렉터리로 사용하고 서버에  garageName이라는 이름의 리모트 생성하고 서비스 시작!!!
+- [garage] conn : 사용자 정보 파일로 서비스 시작!!
 <center>
   <img
     src="readme_image/0001.jpg"

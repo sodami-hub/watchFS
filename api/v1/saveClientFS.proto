@@ -32,7 +32,7 @@ message UserInfo {
 
 service Garage {
     rpc Join(UserInfo) returns (Response){}
-    rpc Cert(UserInfo) returns (Response) {}
+    rpc LogIn(UserInfo) returns (Response) {}
     rpc InitGarage(UserInfo) returns (Response) {}
     rpc UploadFiles(File) returns (Response) {}
 }
