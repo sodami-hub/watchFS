@@ -1,6 +1,6 @@
 // 클라이언트의 정보를 저장 클라이언트 측 api 제공
 
-package main
+package garage
 
 import (
 	"fmt"

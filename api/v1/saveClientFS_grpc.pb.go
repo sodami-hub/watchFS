@@ -201,5 +201,5 @@ var _Garage_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/v1/garage.proto",
+	Metadata: "api/v1/saveClientFS.proto",
 }
