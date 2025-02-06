@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	api "github.com/sodami-hub/watchfs/api/v1"
+	"github.com/sodami-hub/watchfs/api"
 	"google.golang.org/grpc"
 )
 

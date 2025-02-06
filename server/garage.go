@@ -23,7 +23,6 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	api "github.com/sodami-hub/watchfs/api/v1"
 )
 
