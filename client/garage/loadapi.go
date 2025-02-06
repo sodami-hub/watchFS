@@ -1,4 +1,4 @@
-package garage
+package main
 
 import (
 	"fmt"

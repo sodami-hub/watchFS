@@ -1,5 +1,4 @@
 // 클라이언트 테스트를 위한 main 함수
-
 package main
 
 import (
@@ -9,7 +8,6 @@ import (
 	"syscall"
 
 	api "github.com/sodami-hub/watchfs/api/v1"
-	"github.com/sodami-hub/watchfs/client/garage"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -59,7 +57,7 @@ func main() {
 			if len(args) != 3 {
 				return
 			}
-			err = garage.GarageConn(args[1], args[2])
+			err = GarageConn(args[1], args[2])
 			if err != nil {
 				fmt.Println(err)
 				return
@@ -67,13 +65,13 @@ func main() {
 
 		}
 	case "init":
-		err = garage.GarageInit(args[1])
+		err = GarageInit(args[1])
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 	case "start":
-		err = garage.GarageWatch(userInfo)
+		err = GarageWatch(userInfo)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -85,20 +83,20 @@ func main() {
 			return
 		}
 	case "changes":
-		err = garage.ChangeFile()
+		err = ChangeFile()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 	case "all":
-		err = garage.All()
+		err = All()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 	case "save": // 로컬의 변경사항을 리모트에 저장하기 위해서 변경 내용을 저장(commit)
 
-		err = garage.Save(args[1])
+		err = Save(args[1])
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -129,7 +127,7 @@ func main() {
 		}
 		_ = file.Close()
 	case "history":
-		err = garage.ShowHistory()
+		err = ShowHistory()
 		if err != nil {
 			fmt.Println(err)
 			return
