@@ -1,4 +1,9 @@
 /*
+db - garage
+user - garage
+pw - garagegarage
+
+
 CREATE TABLE users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     id VARCHAR(100) NOT NULL UNIQUE,
@@ -23,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
 	api "github.com/sodami-hub/watchfs/api/v1"
 )
 

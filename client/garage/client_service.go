@@ -3,6 +3,10 @@
 package garage
 
 import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -10,6 +14,8 @@ import (
 
 	api "github.com/sodami-hub/watchfs/api/v1"
 	"github.com/sodami-hub/watchfs/client/watcher"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -35,6 +41,75 @@ import (
 garage init garageName 으로 감시 디렉터리 추가하고 감시 시작, - GarageInit() -> GarageWatch()
 */
 
+var addr, caCertFn string
+
+func init() {
+	flag.StringVar(&addr, "address", "localhost:34443", "server address")
+	flag.StringVar(&caCertFn, "ca-cert", "cert.pem", "CA certificate")
+}
+
+func serverConn() (*grpc.ClientConn, api.GarageClient, context.Context, error) {
+	flag.Parse()
+
+	caCert, err := os.ReadFile(caCertFn)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM(caCert); !ok {
+		return nil, nil, nil, fmt.Errorf("failed to add certificate to pool")
+	}
+
+	conn, err := grpc.NewClient(
+		addr,
+		grpc.WithTransportCredentials(
+			credentials.NewTLS(
+				&tls.Config{
+					CurvePreferences: []tls.CurveID{tls.CurveP256},
+					MinVersion:       tls.VersionTLS12,
+					RootCAs:          certPool,
+					NextProtos:       []string{"h2"}, // ALPN(Application-Layer Protocol Negotiation) 속성 설정
+				},
+			),
+		),
+	)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	garageClient := api.NewGarageClient(conn)
+	ctx := context.Background()
+	return conn, garageClient, ctx, nil
+}
+
+// $ garage join id pw
+// garage servie 회원가입
+func GarageJoin(id, pw string) error {
+	// 회원 가입 후 서버 접속 종료
+	userInfo := &api.UserInfo{
+		Id: id,
+		Pw: pw,
+	}
+
+	// b, err := proto.Marshal(userInfo)
+	// if err != nil {
+	// 	return err
+	// }
+
+	conn, garageClient, ctx, err := serverConn()
+	if err != nil {
+		return err
+	}
+
+	response, err := garageClient.Join(ctx, userInfo)
+	if err != nil {
+		return err
+	}
+	fmt.Println(response)
+	conn.Close()
+
+	return nil
+}
+
 // $ garage conn id pw
 func GarageConn(id, pw string) error {
 
@@ -47,7 +122,7 @@ func GarageConn(id, pw string) error {
 	if err != nil {
 		return err
 	}
-	// 서버 접속 - 서버에서 id - pw 확인!!!!
+
 	err = os.MkdirAll("./.garage", 0755)
 	if err != nil {
 		return err

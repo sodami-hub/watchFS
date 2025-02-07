@@ -39,6 +39,16 @@ func main() {
 	}
 
 	switch args[0] {
+	case "join":
+		if len(args) != 3 {
+			return
+		}
+		err := garage.GarageJoin(args[1], args[2])
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println("회원가입 완료")
 	case "conn":
 		if hasUserInfo {
 			if len(args) != 1 {
