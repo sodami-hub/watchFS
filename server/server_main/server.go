@@ -46,8 +46,9 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
+		fmt.Println()
 		signal := <-sig
-		fmt.Printf("recieve signal: %s, shutdown server... \n", signal)
+		fmt.Printf("\nrecieve signal: %s, shutdown server... \n", signal)
 		server.GracefulStop()
 	}()
 

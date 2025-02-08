@@ -90,11 +90,6 @@ func GarageJoin(id, pw string) error {
 		Pw: pw,
 	}
 
-	// b, err := proto.Marshal(userInfo)
-	// if err != nil {
-	// 	return err
-	// }
-
 	conn, garageClient, ctx, err := serverConn()
 	if err != nil {
 		return err
@@ -122,6 +117,18 @@ func GarageConn(id, pw string) error {
 	if err != nil {
 		return err
 	}
+
+	conn, garageClient, ctx, err := serverConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	response, err := garageClient.LogIn(ctx, userInfo)
+	if err != nil {
+		return err
+	}
+	fmt.Println(response)
 
 	err = os.MkdirAll("./.garage", 0755)
 	if err != nil {

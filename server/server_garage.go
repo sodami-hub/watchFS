@@ -25,6 +25,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -59,7 +60,7 @@ func databaseConn() (*sql.DB, error) {
 	return db, nil
 }
 
-// garage conn id pw
+// garage join id pw
 func (gs *GarageService) Join(_ context.Context, userInfo *api.UserInfo) (*api.Response, error) {
 	gs.mu.Lock()
 	defer gs.mu.Unlock()
@@ -103,17 +104,20 @@ func (gs *GarageService) LogIn(_ context.Context, userInfo *api.UserInfo) (*api.
 	// 결과에서 한줄만 가져온다.
 	err = db.QueryRow("SELECT user_id,pw FROM users WHERE id=?", userInfo.Id).Scan(&user_id, &pw)
 	if err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "no rows in result set") {
+			return nil, fmt.Errorf("계정이 존재하지 않는다")
+		}
+		return nil, fmt.Errorf("error 106 line : %v", err)
 	}
-	if pw == "" {
-		return nil, fmt.Errorf("계정이 존재하지 않는다")
+	if pw != userInfo.Pw {
+		return nil, fmt.Errorf("패스워드를 다시 확인해주세요")
 	}
 	var garageName string
-	rows, err := db.Query("SELECT garage_name FROM garages WHERE=?", user_id)
+	rows, err := db.Query("SELECT garage_name FROM garages WHERE user_id=?", user_id)
 	if err != nil {
 		return nil, err
 	}
-
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&garageName)
 		if err != nil {
@@ -125,7 +129,7 @@ func (gs *GarageService) LogIn(_ context.Context, userInfo *api.UserInfo) (*api.
 		}
 	}
 
-	return nil, fmt.Errorf("현재 디렉터리에 생성된 garage가 없습니다. 생성해주세요. \n garage init [garagename]")
+	return &api.Response{Message: "사용자 계정 확인완료. garage를 생성해주세요. $ garage init [garagename]"}, nil
 }
 
 // garage init garagename => garagename으로 서비스 시작
@@ -151,10 +155,11 @@ func (gs *GarageService) InitGarage(_ context.Context, userInfo *api.UserInfo) (
 	}
 
 	var garageName string
-	rows, err := db.Query("SELECT garage_name FROM garages WHERE=?", user_id)
+	rows, err := db.Query("SELECT garage_name FROM garages WHERE user_id=?", user_id)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&garageName)
 		if err != nil {
