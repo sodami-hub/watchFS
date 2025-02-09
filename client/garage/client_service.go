@@ -157,6 +157,9 @@ func GarageInit(garageName string) error {
 	if err != nil {
 		return err
 	}
+	if user.GarageName != "" {
+		return fmt.Errorf("이미 설정된 garage가 존재합니다. 다른 디렉터리에 새롭게 설정하세요")
+	}
 	user.GarageName = garageName
 
 	file, err := os.OpenFile(".garage/.user", os.O_RDWR|os.O_TRUNC, 0644)

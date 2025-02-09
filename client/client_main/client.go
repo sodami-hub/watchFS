@@ -52,6 +52,7 @@ func main() {
 	case "conn":
 		if hasUserInfo {
 			if len(args) != 1 {
+				fmt.Println("이미 등록된 계정정보 있습니다.")
 				return
 			}
 			file, err := os.OpenFile(".garage/.user", os.O_RDWR|os.O_TRUNC, 0644)
