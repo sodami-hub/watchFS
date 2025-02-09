@@ -134,7 +134,7 @@ func GarageConn(id, pw string) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(".garage/.user", os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(".garage/.user", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	defer func() {
 		_ = f.Close()
 	}()
@@ -164,9 +164,32 @@ func GarageInit(garageName string) error {
 		_ = file.Close()
 	}()
 	if err != nil {
+
 		return err
 	}
 	// ToDo : 서버로 데이터 보내서 사용자 확인하고 서버에 userId/[garageName] 디렉터리 생성
+	conn, garageClient, ctx, err := serverConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	response, err := garageClient.InitGarage(ctx, user)
+	if err != nil {
+		fmt.Println(err)
+		user.GarageName = ""
+		protoM, err := proto.Marshal(user)
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(protoM)
+		if err != nil {
+			return err
+		}
+		return err
+	}
+	fmt.Println(response)
 
 	protoM, err := proto.Marshal(user)
 	if err != nil {
@@ -180,10 +203,23 @@ func GarageInit(garageName string) error {
 	return nil
 }
 
+func CheckUser(user *api.UserInfo) error {
+	conn, garageClient, ctx, err := serverConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	response, err := garageClient.LogIn(ctx, user)
+	if err != nil {
+		return err
+	}
+	fmt.Println(response)
+	return nil
+}
+
 // & garage start
 func GarageWatch(user *api.UserInfo) error {
-
-	// ToDo : user를 서버에 보내서 사용자 및 레포지토리 확인!
 
 	myWatcher, err := watcher.NewWatcher("./")
 	if err != nil {
