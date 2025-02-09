@@ -25,6 +25,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -33,14 +34,14 @@ import (
 	api "github.com/sodami-hub/watchfs/api/v1"
 )
 
-type User struct {
-	id         string
-	pw         string
-	garageName string
-}
+// type User struct {
+// 	id         string
+// 	pw         string
+// 	garageName string
+// }
 
 type GarageService struct {
-	user User
+	//user User
 
 	mu sync.Mutex
 	api.UnimplementedGarageServer
@@ -78,13 +79,16 @@ func (gs *GarageService) Join(_ context.Context, userInfo *api.UserInfo) (*api.R
 	}
 	res, err := stmt.Exec(userInfo.Id, userInfo.Pw)
 	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			return &api.Response{Message: "이미 존재하는 아이디입니다. 다른 아이디로 가입하세요."}, nil
+		}
 		return nil, err
 	}
 	lastId, err := res.LastInsertId() // 방금 추가된 데이터의 id를 가져온다.
 	if err != nil {
 		return nil, err
 	}
-	responseMsg := fmt.Sprintf("create new User. user_id : %d", lastId)
+	responseMsg := fmt.Sprintf("회원가입 완료. user_id : %d", lastId)
 	return &api.Response{Message: responseMsg}, nil
 }
 
@@ -100,7 +104,7 @@ func (gs *GarageService) LogIn(_ context.Context, userInfo *api.UserInfo) (*api.
 	defer db.Close()
 
 	var pw string
-	var user_id string
+	var user_id int
 	// 결과에서 한줄만 가져온다.
 	err = db.QueryRow("SELECT user_id,pw FROM users WHERE id=?", userInfo.Id).Scan(&user_id, &pw)
 	if err != nil {
@@ -124,7 +128,7 @@ func (gs *GarageService) LogIn(_ context.Context, userInfo *api.UserInfo) (*api.
 			return nil, err
 		}
 		if garageName == userInfo.GarageName {
-			message := "login success / this garage name is" + garageName
+			message := "login success / this garage name is " + garageName + " / 서비스를 시작합니다."
 			return &api.Response{Message: message}, nil
 		}
 	}
@@ -144,14 +148,14 @@ func (gs *GarageService) InitGarage(_ context.Context, userInfo *api.UserInfo) (
 	defer db.Close()
 
 	var pw string
-	var user_id string
+	var user_id int
 	// 결과에서 한줄만 가져온다.
 	err = db.QueryRow("SELECT user_id,pw FROM users WHERE id=?", userInfo.Id).Scan(&user_id, &pw)
 	if err != nil {
-		return nil, err
-	}
-	if pw == "" {
-		return nil, fmt.Errorf("계정이 존재하지 않는다")
+		if strings.Contains(err.Error(), "no rows in result set") {
+			return nil, fmt.Errorf("존재하지 않는 계정입니다. 계정을 다시 등록해주세요")
+		}
+		return nil, fmt.Errorf("error 157 line : %v", err)
 	}
 
 	var garageName string
@@ -166,8 +170,22 @@ func (gs *GarageService) InitGarage(_ context.Context, userInfo *api.UserInfo) (
 			return nil, err
 		}
 		if garageName == userInfo.GarageName {
-			return nil, fmt.Errorf("이미 존재하는 이름입니다. 다른 이름으로 설정하세요")
+			return nil, fmt.Errorf("당신의 계정에 이미 존재하는 garage 입니다. 다른 이름으로 설정하세요")
 		}
+	}
+
+	insertQuery := "INSERT INTO garages(user_id,garage_name) VALUES(?, ?)"
+	stmt, err := db.Prepare(insertQuery)
+	if err != nil {
+		return nil, err
+	}
+	res, err := stmt.Exec(user_id, userInfo.GarageName)
+	if err != nil {
+		return nil, err
+	}
+	lastId, err := res.LastInsertId() // 방금 추가된 데이터의 id를 가져온다.
+	if err != nil {
+		return nil, err
 	}
 
 	dirPath := "./root/" + userInfo.Id + "_" + userInfo.GarageName
@@ -175,7 +193,8 @@ func (gs *GarageService) InitGarage(_ context.Context, userInfo *api.UserInfo) (
 	if err != nil {
 		return nil, err
 	}
-	return &api.Response{Message: "당신의 계정으로 현재 디렉터리에 garage가 생성됐습니다. 서비스를 시작합니다."}, nil
+	msg := "당신의 계정으로 현재 디렉터리에 garage가 생성됐습니다. 서비스를 시작할 수 있습니다. garage_id :" + strconv.Itoa(int(lastId))
+	return &api.Response{Message: msg}, nil
 }
 
 func (gs *GarageService) UploadFiles(_ context.Context, file *api.File) (*api.Response, error) {
