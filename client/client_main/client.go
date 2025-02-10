@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 
 	api "github.com/sodami-hub/watchfs/api/v1"
 	"github.com/sodami-hub/watchfs/client/garage"
@@ -89,6 +90,7 @@ func main() {
 			fmt.Println(err)
 			return
 		}
+
 	case "stop":
 		err := StopProc(int(userInfo.ChildProcessPid))
 		if err != nil {
@@ -183,6 +185,12 @@ func StartWatch(file *os.File, userInfo *api.UserInfo) error {
 	_, err = file.Write(b)
 	if err != nil {
 		fmt.Println(err)
+	}
+	time.Sleep(2 * time.Second)
+	_, err = os.Stat(".garage/history/historySeq")
+	if err != nil {
+		fmt.Println("초기 데이터를 서버에 저장합니다.")
+		garage.FirstUpload()
 	}
 	return nil
 }

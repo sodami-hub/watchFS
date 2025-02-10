@@ -203,10 +203,77 @@ func GarageInit(garageName string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
-	fmt.Println("초기 디렉터리 정보를 서버로 푸쉬합니다.")
-	for {
+func FirstUpload() error {
+	conn, garageClient, ctx, err := serverConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 
+	fs := &api.ClientFS{}
+
+	err = LoadClientFS(fs)
+	if err != nil {
+		return err
+	}
+
+	user := &api.UserInfo{}
+	err = LoadUserInfo(user)
+	if err != nil {
+		return err
+	}
+
+	rootDir := fmt.Sprintf("./root/%s_%s", user.Id, user.GarageName)
+	fmt.Println("초기 디렉터리 정보를 서버로 푸쉬합니다.", rootDir)
+	var endFlag bool = false
+	count := 1
+	for i := range fs.AllFiles {
+		if count == len(fs.AllFiles) {
+			endFlag = true
+		}
+
+		fd, err := os.ReadFile(i)
+		if err != nil {
+			return err
+		}
+
+		file := &api.File{
+			FilePath: rootDir + "/" + i[2:],
+			FileData: fd,
+			EndFile:  endFlag,
+		}
+		response, err := garageClient.UploadFiles(ctx, file)
+		if err != nil {
+			return err
+		}
+		count++
+		fmt.Println(response)
+	}
+
+	newSeq := &api.HistorySeq{
+		Seq:       0,
+		UploadSeq: 1,
+	}
+	err = os.MkdirAll(".garage/history", 0755)
+	if err != nil {
+		return err
+	}
+
+	fd, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	b, err := proto.Marshal(newSeq)
+	if err != nil {
+		return err
+	}
+	_, err = fd.Write(b)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -298,6 +365,9 @@ func Save(msg string) error {
 	if err != nil {
 		return err
 	}
+
+	// =================  이 아래부분 수정필요 historySeq가 첫번째 접속에서 생성됨 -=========
+
 	// 기존의 history가 있는지 확인
 	f, err := os.Open(".garage/history/historySeq")
 	defer func() {
