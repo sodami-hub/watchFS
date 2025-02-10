@@ -181,12 +181,12 @@ func GarageInit(garageName string) error {
 	if err != nil {
 		fmt.Println(err)
 		user.GarageName = ""
-		protoM, err := proto.Marshal(user)
+		userInfo, err := proto.Marshal(user)
 		if err != nil {
 			return err
 		}
 
-		_, err = file.Write(protoM)
+		_, err = file.Write(userInfo)
 		if err != nil {
 			return err
 		}
@@ -194,14 +194,19 @@ func GarageInit(garageName string) error {
 	}
 	fmt.Println(response)
 
-	protoM, err := proto.Marshal(user)
+	userInfo, err := proto.Marshal(user)
 	if err != nil {
 		return err
 	}
 
-	_, err = file.Write(protoM)
+	_, err = file.Write(userInfo)
 	if err != nil {
 		return err
+	}
+
+	fmt.Println("초기 디렉터리 정보를 서버로 푸쉬합니다.")
+	for {
+
 	}
 	return nil
 }
@@ -344,7 +349,7 @@ func Save(msg string) error {
 		if err != nil {
 			return err
 		}
-		seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR, 0644)
+		seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
 		}

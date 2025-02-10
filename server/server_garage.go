@@ -25,6 +25,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -199,6 +200,21 @@ func (gs *GarageService) InitGarage(_ context.Context, userInfo *api.UserInfo) (
 
 func (gs *GarageService) UploadFiles(_ context.Context, file *api.File) (*api.Response, error) {
 	filePath := file.FilePath
+	/*
+
+		file에서 디렉터리만 생성한다.
+		filepath.Dir 함수는 주어진 경로에서 디렉터리 부분을 반환한다.
+		예를 들어, filepath.Dir("./temp/a")를 호출하면 "./temp/"를 반환합니다.
+	*/
+
+	dir := filepath.Dir(filePath)
+	_, err := os.Stat(dir)
+	if os.IsNotExist(err) {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
