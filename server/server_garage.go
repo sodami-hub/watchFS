@@ -227,9 +227,14 @@ func (gs *GarageService) UploadFiles(_ context.Context, file *api.File) (*api.Re
 		return nil, err
 	}
 
+	// 클라이언트의 rootDir 값을 file 필드에 추가해서 message:"uploaded file path is [./root/sodam_haha/cert.pem]"
+	// message 의 파일 이름에서 rootDir을 분리해야 될 것 같은데...
+	// 아니면 strings.SplitN() 함수를 사용해도 될듯
 	if file.EndFile {
-		return &api.Response{Message: "upload complete"}, nil
+		msg := fmt.Sprintf("uploaded file path is [%s] // upload complete", filePath)
+		return &api.Response{Message: msg}, nil
 	} else {
-		return &api.Response{Message: "uploading..."}, nil
+		msg := fmt.Sprintf("uploaded file path is [%s]", filePath)
+		return &api.Response{Message: msg}, nil
 	}
 }

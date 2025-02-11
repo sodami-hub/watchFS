@@ -255,7 +255,7 @@ func FirstUpload() error {
 
 	newSeq := &api.HistorySeq{
 		Seq:       0,
-		UploadSeq: 1,
+		UploadSeq: 0,
 	}
 	err = os.MkdirAll(".garage/history", 0755)
 	if err != nil {
@@ -366,88 +366,40 @@ func Save(msg string) error {
 		return err
 	}
 
-	// =================  이 아래부분 수정필요 historySeq가 첫번째 접속에서 생성됨 -=========
-
-	// 기존의 history가 있는지 확인
-	f, err := os.Open(".garage/history/historySeq")
-	defer func() {
-		_ = f.Close()
-	}()
-
+	seq := &api.HistorySeq{}
+	err = LoadHistorySeq(seq)
 	if err != nil {
-		// 없으면 첫번째 히스토리 생성해서 파일에 저장
-		err := os.MkdirAll(".garage/history", 0755)
-		if err != nil {
-			return err
-		}
-		saveInfo := &api.SaveChanges{
-			Msg:         msg,
-			Seq:         1,
-			ChangeOrder: myFS.Changes,
-		}
-
-		historySeq := &api.HistorySeq{
-			Seq:       1,
-			UploadSeq: 0,
-		}
-
-		hisFile, err := os.OpenFile(".garage/history/historySeq", os.O_CREATE|os.O_RDWR, 0644)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			_ = hisFile.Close()
-		}()
-
-		b, err := proto.Marshal(historySeq)
-		if err != nil {
-			return err
-		}
-		_, err = hisFile.Write(b)
-		if err != nil {
-			return err
-		}
-		// 수정/생성 된 파일을 다른 디렉터리로 이동(나중에 롤백할 수 있도록)
-		err = MoveChangedFileAndSaveHistory(saveInfo)
-		if err != nil {
-			return err
-		}
-	} else {
-		//기존의 history가 있는경우
-		seq := &api.HistorySeq{}
-		err := LoadHistorySeq(seq)
-		if err != nil {
-			return err
-		}
-		seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR|os.O_TRUNC, 0644)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			_ = seqFile.Close()
-		}()
-		seq.Seq = seq.Seq + 1
-		b, err := proto.Marshal(seq)
-		if err != nil {
-			return err
-		}
-		_, err = seqFile.Write(b)
-		if err != nil {
-			return err
-		}
-
-		history := &api.SaveChanges{
-			Seq:         seq.Seq,
-			Msg:         msg,
-			ChangeOrder: myFS.Changes,
-		}
-
-		// 수정/생성 된 파일을 다른 디렉터리로 이동(나중에 롤백할 수 있도록)
-		err = MoveChangedFileAndSaveHistory(history)
-		if err != nil {
-			return err
-		}
+		return err
 	}
+	seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = seqFile.Close()
+	}()
+	seq.Seq = seq.Seq + 1
+	b, err := proto.Marshal(seq)
+	if err != nil {
+		return err
+	}
+	_, err = seqFile.Write(b)
+	if err != nil {
+		return err
+	}
+
+	history := &api.SaveChanges{
+		Seq:         seq.Seq,
+		Msg:         msg,
+		ChangeOrder: myFS.Changes,
+	}
+
+	// 수정/생성 된 파일을 다른 디렉터리로 이동(나중에 롤백할 수 있도록)
+	err = MoveChangedFileAndSaveHistory(history)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
