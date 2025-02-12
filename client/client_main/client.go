@@ -42,6 +42,7 @@ func main() {
 	switch args[0] {
 	case "join":
 		if len(args) != 3 {
+			fmt.Println("garage join [id] [pw] // garage 서비스에 가입하세요.")
 			return
 		}
 		err := garage.GarageJoin(args[1], args[2])
@@ -52,8 +53,8 @@ func main() {
 		fmt.Println("회원가입 완료")
 	case "conn":
 		if hasUserInfo {
-			if len(args) != 1 {
-				fmt.Println("이미 등록된 계정정보 있습니다.")
+			if len(args) > 1 {
+				fmt.Println("이미 등록된 계정정보 있습니다. garage conn 으로 저장된 garage에 접속하거나, garage를 생성하세요.")
 				return
 			}
 			file, err := os.OpenFile(".garage/.user", os.O_RDWR|os.O_TRUNC, 0644)
@@ -69,6 +70,7 @@ func main() {
 			_ = file.Close()
 		} else {
 			if len(args) != 3 {
+				fmt.Println("garage conn [사용자 id] [사용자 password] // 현재 디렉터리에 사용자 정보를 설정하세요.")
 				return
 			}
 			err = garage.GarageConn(args[1], args[2])
@@ -79,6 +81,10 @@ func main() {
 
 		}
 	case "init":
+		if len(args) > 2 {
+			fmt.Println("init [garage_name] garage name은 띄어쓰기를 허용하지 않습니다.")
+			return
+		}
 		err = garage.GarageInit(args[1])
 		if err != nil {
 			fmt.Println(err)
@@ -90,27 +96,41 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-
 	case "stop":
+		if len(args) > 1 {
+			fmt.Println("stop 옵션에는 추가 실행인자가 필요하지 않습니다.")
+			return
+		}
 		err := StopProc(int(userInfo.ChildProcessPid))
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 	case "changes":
+		if len(args) > 1 {
+			fmt.Println("change 옵션에는 추가 실행인자가 필요하지 않습니다.")
+			return
+		}
 		err = garage.ChangeFile()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 	case "all":
+		if len(args) > 1 {
+			fmt.Println("all 옵션에는 추가 실행인자가 필요하지 않습니다.")
+			return
+		}
 		err = garage.All()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 	case "save": // 로컬의 변경사항을 리모트에 저장하기 위해서 변경 내용을 저장(commit)
-
+		if len(args) > 1 {
+			fmt.Println("save 옵션에는 추가 실행인자가 필요하지 않습니다.")
+			return
+		}
 		err = garage.Save(args[1])
 		if err != nil {
 			fmt.Println(err)
@@ -142,11 +162,17 @@ func main() {
 		}
 		_ = file.Close()
 	case "history":
+		if len(args) > 1 {
+			fmt.Println("history 옵션에는 추가 실행인자가 필요하지 않습니다.")
+			return
+		}
 		err = garage.ShowHistory()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
+	case "push":
+
 	}
 }
 
