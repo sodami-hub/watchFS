@@ -151,6 +151,11 @@ func GarageConn(id, pw string) error {
 }
 
 // $ garage init garageName
+/*
+추가 로직
+-> 같은 garage 이름으로 초기화하면 기존의 서버에 저장된 내용을 복사한다.
+-> 다른 위치에서 같은 garage name을 사용할 때 동기화가 가능하도록 업데이트 필요
+*/
 func GarageInit(garageName string) error {
 	// 유저 정보 가져오기
 	user := &api.UserInfo{}

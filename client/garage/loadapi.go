@@ -64,8 +64,8 @@ func LoadHistorySeq(seq *api.HistorySeq) error {
 	return nil
 }
 
-// push를 하기 위해서 HistorySeq 구조체의 uploadSeq를 불러와서 upload된 위치를 확인하고 그 이후부터의 값을 전달한다.
 // garage.push() 함수에서 사용하기 위한 함수이다.
+// save sequence 를 매개변수로 받아서 해당하는 save 정보를 가져온다.
 func LoadSaveChanges(saveInfo *api.SaveChanges, seq int) error {
 
 	path := fmt.Sprintf(".garage/history/changeOrder_%d/save_%d", seq, seq)
