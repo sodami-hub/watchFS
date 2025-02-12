@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -230,18 +231,20 @@ func FirstUpload() error {
 	fmt.Println("초기 디렉터리 정보를 서버로 푸쉬합니다.", rootDir)
 	var endFlag bool = false
 	count := 1
-	for i := range fs.AllFiles {
+	for k, v := range fs.AllFiles {
 		if count == len(fs.AllFiles) {
 			endFlag = true
 		}
 
-		fd, err := os.ReadFile(i)
+		fd, err := os.ReadFile(k)
 		if err != nil {
 			return err
 		}
 
 		file := &api.File{
-			FilePath: rootDir + "/" + i[2:],
+			RootDir:  rootDir,
+			FilePath: k, //rootDir + "/" + i[2:]
+			Desc:     v,
 			FileData: fd,
 			EndFile:  endFlag,
 		}
@@ -262,7 +265,7 @@ func FirstUpload() error {
 		return err
 	}
 
-	fd, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR|os.O_CREATE, 0644)
+	fd, err := os.OpenFile(".garage/history/historySeq", os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
@@ -271,10 +274,12 @@ func FirstUpload() error {
 	if err != nil {
 		return err
 	}
+
 	_, err = fd.Write(b)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -333,7 +338,7 @@ func All() error {
 	}
 
 	allFile := myFS.AllFiles
-	fmt.Println("\n[서버 저장 대기중인 파일들]")
+	fmt.Println("\n[저장된 파일들 // 서버 저장 상태를 확인하려면 history 옵션 사용]")
 	for k, v := range allFile {
 		fmt.Printf("[%s : %s]\n", k, v)
 	}
@@ -369,7 +374,12 @@ func Save(msg string) error {
 	seq := &api.HistorySeq{}
 	err = LoadHistorySeq(seq)
 	if err != nil {
-		return err
+		if err == io.EOF {
+			seq.Seq = 0
+			seq.UploadSeq = 0
+		} else {
+			return err
+		}
 	}
 	seqFile, err := os.OpenFile(".garage/history/historySeq", os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
@@ -411,7 +421,7 @@ func MoveChangedFileAndSaveHistory(saveInfo *api.SaveChanges) error {
 		return err
 	}
 	savePath := ".garage/history/changeOrder_" + strconv.Itoa(int(saveInfo.Seq))
-	err = os.Mkdir(savePath, 0755)
+	err = os.MkdirAll(savePath, 0755)
 	if err != nil {
 		return err
 	}
@@ -445,7 +455,10 @@ func MoveChangedFileAndSaveHistory(saveInfo *api.SaveChanges) error {
 		}
 	}
 
-	for k := range myFS.Changes {
+	for k, v := range myFS.Changes {
+		if v == "delete" {
+			continue
+		}
 		file, err := os.OpenFile(k, os.O_RDONLY, 0655)
 		if err != nil {
 			return err
@@ -483,11 +496,19 @@ func ShowHistory() error {
 	seq := &api.HistorySeq{}
 	err := LoadHistorySeq(seq)
 	if err != nil {
-		return err
+		if err == io.EOF {
+			seq.Seq = 0
+			seq.UploadSeq = 0
+		} else {
+			return err
+		}
 	}
 	num := seq.Seq
 
 	if seq.UploadSeq == 0 {
+		if seq.Seq == 0 {
+			fmt.Println("로컬의 저장된 변경사항이 없다.")
+		}
 		fmt.Println("리모트에 저장된 파일이 없다.")
 	}
 	for i := 1; i <= int(num); i++ {
@@ -514,5 +535,96 @@ func ShowHistory() error {
 		}
 	}
 
+	return nil
+}
+
+func Push() error {
+	seq := &api.HistorySeq{}
+	err := LoadHistorySeq(seq)
+	if err != nil {
+		return err
+	}
+	if seq.Seq == seq.UploadSeq {
+		return fmt.Errorf("모든 저장된 변경사항이 push 된 상태입니다")
+	}
+	saveSeq := seq.Seq
+	upLoadSeq := seq.UploadSeq
+
+	for {
+		upLoadSeq = upLoadSeq + 1
+		changeInfo := &api.SaveChanges{}
+		err := LoadSaveChanges(changeInfo, int(upLoadSeq))
+		if err != nil {
+			return err
+		}
+
+		user := &api.UserInfo{}
+		err = LoadUserInfo(user)
+		if err != nil {
+			return err
+		}
+
+		conn, garageClient, ctx, err := serverConn()
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		rootDir := fmt.Sprintf("./root/%s_%s", user.Id, user.GarageName)
+		fmt.Println("서버로 푸쉬합니다.")
+		var endFlag bool = false
+		count := 1
+		for k, v := range changeInfo.ChangeOrder {
+			if count == len(changeInfo.ChangeOrder) {
+				endFlag = true
+			}
+			path := fmt.Sprintf(".garage/history/changeOrder_%d/%s", upLoadSeq, k[2:])
+			fileData := make([]byte, 4096)
+			if v != "delete" {
+				fd, err := os.ReadFile(path)
+				if err != nil {
+					return err
+				}
+				fileData = fd
+			}
+			file := &api.File{
+				RootDir:  rootDir,
+				FilePath: k, // rootDir + "/" + i[2:]
+				Desc:     v,
+				FileData: fileData,
+				EndFile:  endFlag,
+			}
+
+			response, err := garageClient.UploadFiles(ctx, file)
+			if err != nil {
+				return err
+			}
+			count++
+			fmt.Println(response)
+
+		}
+		if upLoadSeq == saveSeq {
+			break
+		}
+	}
+
+	newSeq := &api.HistorySeq{
+		Seq:       saveSeq,
+		UploadSeq: upLoadSeq,
+	}
+
+	fd, err := os.OpenFile(".garage/history/historySeq", os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+	b, err := proto.Marshal(newSeq)
+	if err != nil {
+		return err
+	}
+	_, err = fd.Write(b)
+	if err != nil {
+		return err
+	}
 	return nil
 }

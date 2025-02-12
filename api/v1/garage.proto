@@ -38,9 +38,11 @@ service Garage {
 }
 
 message File {
-    string filePath = 2;
-    bytes fileData = 3;
-    bool endFile =4;
+    string rootDir =1;
+    string filePath = 2;  // filePath
+    string desc =3;     // 변경사항 - "delete", "create" ...
+    bytes fileData = 4;
+    bool endFile =5;
 }
 
 message Response {

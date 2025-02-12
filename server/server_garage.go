@@ -199,42 +199,56 @@ func (gs *GarageService) InitGarage(_ context.Context, userInfo *api.UserInfo) (
 }
 
 func (gs *GarageService) UploadFiles(_ context.Context, file *api.File) (*api.Response, error) {
-	filePath := file.FilePath
+	filePath := file.RootDir + "/" + file.FilePath[2:]
 	/*
 
 		file에서 디렉터리만 생성한다.
 		filepath.Dir 함수는 주어진 경로에서 디렉터리 부분을 반환한다.
 		예를 들어, filepath.Dir("./temp/a")를 호출하면 "./temp/"를 반환합니다.
 	*/
-
-	dir := filepath.Dir(filePath)
-	_, err := os.Stat(dir)
-	if os.IsNotExist(err) {
-		err := os.MkdirAll(dir, 0755)
+	if file.Desc == "delete" {
+		err := os.Remove(filePath)
 		if err != nil {
 			return nil, err
 		}
-	}
+		if file.EndFile {
+			msg := fmt.Sprintf("delete file path is [%s] // upload complete", filePath)
+			return &api.Response{Message: msg}, nil
+		} else {
+			msg := fmt.Sprintf("delete file path is [%s]", filePath)
+			return &api.Response{Message: msg}, nil
+		}
 
-	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return nil, err
-	}
-	defer fd.Close()
-
-	_, err = fd.WriteString(string(file.FileData))
-	if err != nil {
-		return nil, err
-	}
-
-	// 클라이언트의 rootDir 값을 file 필드에 추가해서 message:"uploaded file path is [./root/sodam_haha/cert.pem]"
-	// message 의 파일 이름에서 rootDir을 분리해야 될 것 같은데...
-	// 아니면 strings.SplitN() 함수를 사용해도 될듯
-	if file.EndFile {
-		msg := fmt.Sprintf("uploaded file path is [%s] // upload complete", filePath)
-		return &api.Response{Message: msg}, nil
 	} else {
-		msg := fmt.Sprintf("uploaded file path is [%s]", filePath)
-		return &api.Response{Message: msg}, nil
+		dir := filepath.Dir(filePath)
+		_, err := os.Stat(dir)
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(dir, 0755)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return nil, err
+		}
+		defer fd.Close()
+
+		_, err = fd.WriteString(string(file.FileData))
+		if err != nil {
+			return nil, err
+		}
+
+		// 클라이언트의 rootDir 값을 file 필드에 추가해서 message:"uploaded file path is [./root/sodam_haha/cert.pem]"
+		// message 의 파일 이름에서 rootDir을 분리해야 될 것 같은데...
+		// 아니면 strings.SplitN() 함수를 사용해도 될듯
+		if file.EndFile {
+			msg := fmt.Sprintf("uploaded file path is [%s] // upload complete", filePath)
+			return &api.Response{Message: msg}, nil
+		} else {
+			msg := fmt.Sprintf("uploaded file path is [%s]", filePath)
+			return &api.Response{Message: msg}, nil
+		}
 	}
 }

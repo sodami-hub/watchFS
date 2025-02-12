@@ -127,8 +127,8 @@ func main() {
 			return
 		}
 	case "save": // 로컬의 변경사항을 리모트에 저장하기 위해서 변경 내용을 저장(commit)
-		if len(args) > 1 {
-			fmt.Println("save 옵션에는 추가 실행인자가 필요하지 않습니다.")
+		if len(args) > 2 {
+			fmt.Println("save [msg] // save옵션과 message를 사용한다.")
 			return
 		}
 		err = garage.Save(args[1])
@@ -172,6 +172,15 @@ func main() {
 			return
 		}
 	case "push":
+		if len(args) > 1 {
+			fmt.Println("push 옵션에는 추가 실행인자가 필요하지 않습니다.")
+			return
+		}
+		err := garage.Push()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
 	}
 }
